@@ -1,0 +1,40 @@
+Natuurkunde:
+ call _clrLCDFull
+ call _homeup
+ ld hl,NAMENU
+ call _Puts
+NA_KEYLOOP:
+ call BETAKEY
+ cp 64
+ jp z,MAIN_MENU
+ cp 143
+ jp z,NA_SAMENVATTINGEN
+ cp 144
+ jp z,NA_CALCULATORS
+ cp 145
+ jp z,NA_PLUGINS
+ cp 146
+ jp z,MAIN_MENU
+ cp 147
+ jp z,EXIT
+ jr NA_KEYLOOP
+NA_SAMENVATTINGEN:
+ ld a,%00100010
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+NA_CALCULATORS:
+ ld a,%00010010
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+NA_PLUGINS:
+ ld a,%00110010
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+NAMENU:
+ .db "- Natuurkunde - "
+ .db "                "
+ .db "1:Samenvattingen"
+ .db "2:Calculators   "
+ .db "3:Plugins       "
+ .db "4:Terug         "
+ .db "5:Einde",0

@@ -1,0 +1,40 @@
+WISKUNDE:
+ call _clrLCDFull
+ call _homeup
+ ld hl,WIMENU
+ call _Puts
+WI_KEYLOOP:
+ call BETAKEY
+ cp 64
+ jp z,MAIN_MENU
+ cp 143
+ jp z,WI_SAMENVATTINGEN
+ cp 144
+ jp z,WI_CALCULATORS
+ cp 145
+ jp z,WI_PLUGINS
+ cp 146
+ jp z,MAIN_MENU
+ cp 147
+ jp z,EXIT
+ jr WI_KEYLOOP
+WI_SAMENVATTINGEN:
+ ld a,%00100001
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+WI_CALCULATORS:
+ ld a,%00010001
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+WI_PLUGINS:
+ ld a,%00110001
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+WIMENU:
+ .db "  - Wiskunde -  "
+ .db "                "
+ .db "1:Samenvattingen"
+ .db "2:Calculators   "
+ .db "3:Plugins       "
+ .db "4:Terug         "
+ .db "5:Einde",0

@@ -1,0 +1,220 @@
+.Nolist
+#define equ .equ
+#define EQU .equ
+#define end .end
+#define END .end
+#include "ti83plus.inc"
+plugflags	EQU       33          ; IY OFFSET VALUE
+digitnumber	EQU       0
+digit1		EQU       1
+digit2		EQU       2
+;		EQU       3
+;PWiskunde	EQU       4
+;PNatuurkunde	EQU       5
+;PScheikunde	EQU       6
+;PBiologie	EQU       7
+;
+ExtraPlugFlags	EQU       34          ; IY OFFSET VALUE
+XWiskunde	EQU       0
+XNatuurkunde	EQU       1
+XScheikunde	EQU       2
+XBiologie	EQU       3
+Xcalc		EQU       4
+Xsumm		EQU       5
+XNoSubject	EQU       6
+;asm_flag2_7	EQU       7
+;
+;asm_flag3	EQU       35          ; IY OFFSET VALUE
+;asm_flag3_0	EQU       0
+;asm_flag3_1	EQU       1
+;asm_flag3_2	EQU       2
+;asm_flag3_3	EQU       3
+;asm_flag3_4	EQU       4
+;asm_flag3_5	EQU       5
+;asm_flag3_6	EQU       6
+;asm_flag3_7	EQU       7
+
+;Some flags for plugins
+
+;PlugProtected	EQU	0		; As soon as the text editor is ready, PlugText flag will be
+PlugText	EQU	0		; replaced with PlugProtected flag
+PlugNewText	EQU	1
+PlugBasic	EQU	2
+;		EQU	3
+PlugWI		EQU	4
+PlugNA		EQU	5
+PlugSK		EQU	6
+PlugBI		EQU	7
+
+PLUGIN_COUNT	EQU	$86EC
+PLUGIN_LIST	EQU	$86ED
+
+
+.LIST
+.org progstart
+ jr START			; Jumps to actual beginning
+VERSION:
+ .db "2.1",0			; version number
+START:
+ di				; disables interrupt programs
+ ld (savesp),sp			; save sp register
+MAIN_MENU:			; The main menu of the program
+ ld hl,BETALOGO			; Loads background image
+ ld de,plotsscreen
+ ld bc,768
+ ldir
+ bcall(_grbufcpy_V)
+ ld hl,$332E			; outputs version number
+ ld (pencol),hl
+ ld hl,VERSION
+ bcall(_vputs)
+KEY_LOOP:
+ call BETAKEY
+ cp 143
+ jp z,WISKUNDE
+ cp 144
+ jp z,NATUURKUNDE
+ cp 145
+ jp z,SCHEIKUNDE
+ cp 146
+ jp z,BIOLOGIE
+ cp 147
+ jr z,ALLPLUGINS
+ cp 64
+ jr nz,KEY_LOOP
+
+EXIT:
+ res oninterrupt,(iy+onflags)
+ ld sp,(savesp)			; Puts original sp register back
+ bcall(_grbufclr)
+ bcall(_clrtxtshd)
+ bcall(_clrLCDFull)
+; bcall(_JforceCmdnochar)		; Commented out because it eats your TI's memory (scary)
+ call HOMEUP
+ ei
+ ret
+
+ALLPLUGINS:
+ ld a,255
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+
+
+;;
+;;	Routines
+;;
+
+HOMEUP:
+ push hl
+ ld hl,0
+ ld (currow),hl
+ pop hl
+ ret
+
+;PAUSE:				; Same as basics Pause
+; ld hl,$0107
+; ld (currow),hl
+; ld hl,ENTER
+; bcall(_puts)
+;PAUSE_LOOP:
+; call BETAKEY
+; cp 5
+; jr nz,PAUSE_LOOP
+; ret
+
+EXECBASIC:			; Executes a basic program
+ push hl
+ ld a,132
+ bcall(_setxxop1)
+ bcall(_storand)
+ bcall(_zerooop1)
+ pop hl
+ ld de,op1
+ ld bc,10
+ ldir
+; bcall(_chkfindsym)	; became obsolete because the plugin support already looked up the prog
+; jr c,ERRUNDEFINED
+ Bit ProgExecuting, (iy + newDispf)
+ push af
+ set ProgExecuting,(iy+newDispf)
+ bcall(_parseInp)
+ pop af
+ ret nz
+ res ProgExecuting,(iy+newDispf)
+ ret
+
+;ERRUNDEFINED:
+; bcall(_clrLCDFull)
+; call HOMEUP
+; ld hl,T_ERRUNDEFINED
+; bcall(_puts)
+; call PAUSE
+; jp MAIN_MENU 
+
+BETAKEY:
+ bcall(_runindicoff)
+ bcall(_getkey)
+ bit oninterrupt,(iy+onflags)
+ jr nz,EXIT
+ cp 9
+ jr z,EXIT
+ cp 73
+ jp z,Wiskunde		;SHORTCUT_WI
+ cp 72
+ jp z,Natuurkunde	;SHORTCUT_NA
+ cp 46
+ jp z,Scheikunde	;SHORTCUT_SK
+ cp 90
+ jp z,Biologie		;SHORTCUT_BI
+ cp 68
+ jp z,AllPlugins	;SHORTCUT_PLUGINS
+ ret
+
+;;
+;;	Subprogs
+;;
+
+#include "Wi.bta"
+#include "na.bta"
+#include "sk.bta"
+#include "bi.bta"
+#include "plugin.bta"
+
+;;
+;;	Data
+;;
+
+BETALOGO:
+#include "logo.bta"		; New logo for beta with plugin support
+
+SAVESP:
+ .db 0,0
+T_ERRUNDEFINED:
+ .db "Het onderdeel   "
+ .db "is niet         "
+ .db "ge",$9D,"nstalleerd",0
+ENTER:
+ .db "Druk op enter",0
+
+;;
+;;	Beta's own Stack
+;;
+
+ASAVE:
+ .db 0
+BSAVE:
+ .db 0
+CSAVE:
+ .db 0
+DSAVE:
+ .db 0
+ESAVE:
+ .db 0
+HSAVE:
+ .db 0
+LSAVE:
+ .db 0
+
+
+.end
+END

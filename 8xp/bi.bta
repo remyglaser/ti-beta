@@ -1,0 +1,40 @@
+Biologie:
+ bcall(_clrLCDFull)
+ call HOMEUP
+ ld hl,BIMENU
+ bcall(_Puts)
+BI_KEYLOOP:
+ call BETAKEY
+ cp 64
+ jp z,MAIN_MENU
+ cp 143
+ jp z,BI_SAMENVATTINGEN
+ cp 144
+ jp z,BI_CALCULATORS
+ cp 145
+ jp z,BI_PLUGINS
+ cp 146
+ jp z,MAIN_MENU
+ cp 147
+ jp z,EXIT
+ jr BI_KEYLOOP
+BI_SAMENVATTINGEN:
+ ld a,%00101000
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+BI_CALCULATORS:
+ ld a,%00011000
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+BI_PLUGINS:
+ ld a,%00111000
+ ld (iy+extraplugflags),a
+ jp BETASHELL
+BIMENU:
+ .db "  - Biologie -  "
+ .db "                "
+ .db "1:Samenvattingen"
+ .db "2:Calculators   "
+ .db "3:Plugins       "
+ .db "4:Terug         "
+ .db "5:Einde",0

@@ -1,0 +1,180 @@
+;.Nolist
+;#define equ .equ
+;#define EQU .equ
+;#define end .end
+;#define END .end
+;#include "ti83asm.inc"
+;.org 9327h
+ScrollFlags	EQU	35
+CursorAtEnd	EQU	0
+CursorAtBegin	EQU	1
+
+
+
+SIMPLE_SCROLL:
+ res CursorAtEnd,(iy+ScrollFlags)
+ res CursorAtBegin,(iy+ScrollFlags)
+ ld hl,(current_adress)
+ ld (Cursor_Adress),hl
+ dec hl
+ ld (Min_adress),hl
+ ld b,3
+DECADR_LOOP:
+ dec hl
+ djnz DECADR_LOOP
+ ld d,(hl)
+ dec hl
+ ld e,(hl)
+ inc hl
+ add hl,de
+ inc hl
+ ld (Max_Adress),hl
+
+OUTPUT_PAGE:
+ bcall(_grbufclr)
+ bcall(_grbufcpy)
+ xor a
+ ld (penrow),a
+ ld (pencol),a
+
+OUTPUT_PAGE_LOOP:
+ ld hl,(cursor_adress)
+ ld a,(hl)
+ cp $D6
+ jp z,NEXT_LINE
+ bcall(_vputmap)
+ call INCCURSOR
+ jp OUTPUT_PAGE_LOOP
+
+INCCURSOR:
+ ld hl,(max_adress)
+ ex de,hl
+ ld hl,(cursor_adress)
+ inc hl
+ bcall(_cphlde)
+ jp z,RETTO__SCROLL_KEYLOOP
+ ld (cursor_adress),hl
+ ret
+
+RETTO__SCROLL_KEYLOOP:
+ set CursorAtEnd,(iy+ScrollFlags)
+ pop hl
+ ld hl,SCROLL_KEYLOOP
+ push hl
+ ret
+
+NEXT_LINE:
+ call INCCURSOR
+ ld a,(penrow)
+ add a,6
+ ld b,255-58
+ add a,b
+ jp c,SCROLL_KEYLOOP
+ sub b
+ ld (penrow),a
+ xor a
+ ld (pencol),a
+ jp OUTPUT_PAGE_LOOP
+
+SCROLL_KEYLOOP:
+ call BETAKEY
+ cp 3
+ jp z,UP
+ cp 4
+ jp z,DOWN
+ cp 5
+ jp z,BETASHELL
+ cp 64
+ jp z,BETASHELL
+ jp SCROLL_KEYLOOP
+
+DOWN:
+ bit CursorAtEnd,(iy+ScrollFlags)
+ jp nz,SCROLL_KEYLOOP
+ res CursorAtBegin,(iy+ScrollFlags)
+ jp OUTPUT_PAGE
+
+UP:
+ bit CursorAtBegin,(iy+ScrollFlags)
+ jp nz,SCROLL_KEYLOOP
+ ld b,22
+UP_LOOP:
+ ld hl,(min_adress)
+ ex de,hl
+ ld hl,(cursor_adress)
+ dec hl
+ bcall(_cphlde)
+ jp z,CURSOR_AT_BEGIN
+ ld (cursor_adress),hl
+ ld a,(hl)
+ cp $D6
+ jp nz,up_loop
+ djnz UP_LOOP
+ call INCCURSOR
+ res CursorAtEnd,(iy+ScrollFlags)
+ jp OUTPUT_PAGE
+
+CURSOR_AT_BEGIN:
+ res CursorAtEnd,(iy+ScrollFlags)
+ set CursorAtBegin,(iy+ScrollFlags)
+ jp OUTPUT_PAGE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cursor_Adress:
+ .db 0,0
+Min_Adress:
+ .db 0,0
+Max_Adress:
+ .db 0,0
+
+; .db $39,$01
+; .db $D9,$3F
+; .db %10000000
+;CURRENT_ADRESS89:
+; .db "Dit is regel 1",$D6
+; .db "Dit is regel 2",$D6
+; .db "Dit is regel 3",$D6
+; .db "Dit is regel 4",$D6
+; .db "Dit is regel 5",$D6
+; .db "Dit is regel 6",$D6
+; .db "Dit is regel 7",$D6
+; .db "Dit is regel 8",$D6
+; .db "Dit is regel 9",$D6
+; .db "Dit is regel 10",$D6
+; .db "Dit is regel 11",$D6
+; .db "Dit is regel 12",$D6
+; .db "Dit is regel 13",$D6
+; .db "Dit is regel 14",$D6
+; .db "Dit is regel 15",$D6
+; .db "Dit is regel 16",$D6
+; .db "Dit is regel 17",$D6
+; .db "Dit is regel 18",$D6
+; .db "Dit is regel 19",$D6
+; .db "Dit is regel 20"
+
+;current_adress:
+; .dw current_adress89
+
+;.end
+;END
