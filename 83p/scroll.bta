@@ -1,0 +1,475 @@
+
+SIMPLE_SCROLL:
+
+ call _OpenPlugin
+
+ ld b,3			; why?
+
+
+OUTPUT_PAGE:
+ bcall(_grbufclr)
+ xor a
+ ld (penrow),a
+ ld (pencol),a
+
+
+OUTPUT_PAGE_LOOP:
+ call _nextChar
+
+ cp tag_Return
+ jp z,NEXT_LINE
+ cp tag_freetext
+ jr z,FREETEXT
+ cp tag_invert
+ jr z,INVERSE
+ cp tag_tab
+ jp z,TAB
+ cp tag_picture
+ jr z,PIC
+ cp tag_page_end
+ jp z,SCROLL_KEY
+ cp tag_Square
+ jp z,CUSTOM_SQUARE
+ cp tag_line
+ jp z,CUSTOM_LINE
+
+ res 2,(iy+textflags)
+ bcall(_vputmap)
+ ld a,(iy+textflags)
+; ld a,($942B)
+; and a
+; jr z,STRANGE_ERROR
+
+ jr OUTPUT_PAGE_LOOP
+
+;STRANGE_ERROR:
+; jr _ERRLINKXMIT	; strange response to a strange bug
+
+
+INVERSE:
+ ld a,(iy+Textflags)
+ xor %00001000
+ ld (iy+textFlags),a
+ jr OUTPUT_PAGE_LOOP
+
+FREETEXT:
+ ld hl,(pencol)
+ push hl
+
+ ld a,(x)
+ ld h,a
+ ld a,(y)
+ ld l,a
+ ld (pencol),hl
+
+ ld hl,(FreeText)
+FREETEXT_LOOP:
+  ld a,(hl)
+  cp tag_freetext
+  jr z,FREETEXT_LOOP_END
+  cp tag_invert
+  jr z,FREETEXT_INVERT
+  bcall(_vputmap)
+  jr FREETEXT_LOOP
+FREETEXT_LOOP_END:
+
+ pop hl
+ ld (pencol),hl
+
+ jp OUTPUT_PAGE_LOOP
+
+FREE_INVERSE:
+ ld a,(iy+Textflags)
+ xor %00001000
+ ld (iy+textFlags),a
+ jr FREETEXTLOOP
+
+
+
+PIC:
+; new code:
+
+; Dimension check follows:
+ ld a,(x)
+ add a,255-96		; x < 96
+ jp c,_ERRDIMENSION
+
+ ld a,(y)
+ add a,255-64		; y < 64
+ jp c,_ERRDIMENSION
+
+ ld a,(x)
+ ld b,a
+ ld a,96
+ sub b
+ ld (xextra),a
+
+ ld b,a
+ ld a,(x)
+
+
+ ld a,(y)
+ ld b,a
+ ld a,64
+ sub b
+ ld (yextra),a
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;old code:
+ call INCCURSOR
+ ld a,(hl)
+ ld l,a
+ ld h,0
+ ld a,8
+ bcall(_divhlbya)
+ ld a,l
+ ld (x),a
+
+ call INCCURSOR
+ ld a,(hl)
+ ld (y),a
+
+ call INCCURSOR
+ ld a,(hl)
+ ld l,a
+ ld h,0
+ ld a,8
+ bcall(_divhlbya)
+ and a
+ jp nz,_ERRDIMENSION
+ ld a,l
+ ld (width),a
+
+ call INCCURSOR
+ ld a,(hl)
+ ld (height),a
+
+ ld a,(x)
+ ld b,a
+ ld a,(width)
+ add a,b
+ add a,255-12
+ jp c,_ERRDOMAIN
+
+ ld a,(y)
+ ld b,a
+ ld a,(height)
+ add a,b
+ add a,255-64
+ jp c,_ERRDOMAIN
+
+ ld a,(y)
+ ld l,a
+ ld h,12
+ bcall(_htimesl)
+ ld a,(x)
+ dec a
+ cp $FF
+ call z,A_0
+ add a,l
+ call c,INC_H
+ ld l,a
+ ld de,plotsscreen
+ add hl,de
+ bcall(_cphlde)
+ call z,DEC_HL
+ ld (pic_current),hl
+
+ ld a,(y)
+ ld b,a
+ ld a,(height)
+ add a,b
+ dec a
+ ld l,a
+ ld h,12
+ bcall(_htimesl)
+ ld a,(x)
+ ld b,a
+ ld a,(width)
+ add a,b
+ ld b,l
+ add a,b
+ ld l,a
+ call c,INC_H
+ ld de,plotsscreen
+ add hl,de
+ ld (PIC_MAX),hl
+
+ 
+
+DRAW_LOOP:
+ ld a,(width)
+ ld b,a
+DRAW_MINILOOP:
+
+ call INCCURSOR
+ ld a,(hl)
+ call PIC_INC
+ ld c,(hl)
+ or c			; Transparency
+ ld (hl),a
+
+
+ djnz DRAW_MINILOOP
+ ld a,(width)
+ ld b,a
+ ld a,12
+ sub b
+ and a
+ jr z,DRAW_LOOP
+ ld b,a
+DRAW_SKIPLOOP:
+ call PIC_INC
+ djnz DRAW_SKIPLOOP
+ jr DRAW_LOOP
+
+
+
+PIC_EXIT:
+ pop hl
+ ld b,4
+PIC_EXITLOOP:
+ call INCCURSOR
+ djnz PIC_EXITLOOP
+ jp OUTPUT_PAGE_LOOP
+
+
+
+
+
+
+INC_H:
+ inc h
+ ret
+DEC_HL:
+ dec hl
+ ret
+A_0:
+ xor a
+ ret
+PIC_INC:
+ ld hl,(PIC_MAX)
+ ex de,hl
+ ld hl,(PIC_CURRENT)
+ inc hl
+ bcall(_cphlde)
+ jr z,PIC_EXIT
+ ld (PIC_CURRENT),hl
+ ret
+
+		; Vector support
+CUSTOM_SQUARE:
+ call INCCURSOR
+ ld b,(hl)
+
+ call INCCURSOR
+ ld c,(hl)
+
+ call INCCURSOR
+ ld d,(hl)
+ push de
+
+ call INCCURSOR
+ pop de
+ ld e,(hl)
+ push de
+
+ call INCCURSOR)
+ ld h,(hl)
+ pop de
+
+ call SQUARE
+ jp OUTPUT_PAGE_LOOP
+
+
+
+
+CUSTOM_LINE:
+ call INCCURSOR
+ ld b,(hl)
+
+ call INCCURSOR
+ ld c,(hl)
+ ld a,63
+ sub c
+ ld c,a
+
+ call INCCURSOR
+ ld d,(hl)
+ push de
+
+ call INCCURSOR
+ pop de
+ ld e,(hl)
+ ld a,63
+ sub e
+ ld e,a
+ push de
+
+ call INCCURSOR
+ ld h,(hl)
+
+ pop de
+ bcall(_Iline)
+ call INCCURSOR
+ jp OUTPUT_PAGE_LOOP
+
+
+
+
+
+
+TAB:
+ ld a,(pencol)
+ add a,255-24
+ jr c,LARGERTHAN24
+ ld a,24
+ jr END_TAB
+
+LARGERTHAN24:
+ ld a,(pencol)
+ add a,255-48
+ jr c,LARGERTHAN48
+ ld a,48
+ jr END_TAB
+
+LARGERTHAN48:
+ ld a,(pencol)
+ add a,255-72
+ jr c,END_TAB
+ ld a,72
+
+END_TAB:
+ ld (pencol),a
+ call INCCURSOR
+ jp OUTPUT_PAGE_LOOP
+
+INCCURSOR:
+ call INCCURSOR_SYS
+ jr c,RETTO__SCROLL_KEY
+ ret
+
+RETTO__SCROLL_KEY:
+ pop hl
+ jr SCROLL_KEY
+
+NEXT_LINE:
+ call INCCURSOR
+ ld a,(penrow)
+ add a,6
+ ld b,255-58
+ add a,b
+ jp c,OUTPUT_PAGE_LOOP
+ sub b
+ ld (penrow),a
+ xor a
+ ld (pencol),a
+ jp OUTPUT_PAGE_LOOP
+
+SCROLL_KEY:
+ bcall(_grbufcpy_v)
+ ld a,(iy+textflags)
+ ld (asave),a
+ res textinverse,(iy+textflags)
+SCROLL_KEYLOOP:
+ call BETAKEY
+ cp key_up
+ jr z,UP
+ cp key_down
+ jr z,DOWN
+ cp key_enter
+ jr z,SCROLL_BETASHELL
+ jr SCROLL_KEYLOOP
+
+DOWN:
+ ld a,(asave)
+ ld (iy+textflags),a
+ call INCCURSOR
+ jp OUTPUT_PAGE
+
+
+UP:
+ ld a,(asave)
+ ld (iy+textflags),a
+
+ 
+ ld b,2
+ ld hl,(cursor_adress)
+ ld a,(hl)
+ cp tag_picture
+ jr z,SKIP_PICTURE
+
+UP_LOOP:
+ call DECCURSOR
+
+ ld a,(hl)
+ cp tag_picture
+ jr z,SKIP_PICTURE
+
+ cp tag_page_end
+ jr nz,up_loop
+ djnz UP_LOOP
+
+ call INCCURSOR
+ jp OUTPUT_PAGE
+
+SKIP_PICTURE:
+ call DECCURSOR
+ ld a,(hl)
+ ld c,a
+ call DECCURSOR
+ ld a,(hl)
+ ld b,a
+SKIP_PIC_LOOP:
+ call DECCURSOR
+ dec bc
+ ld d,b
+ ld e,c
+ ld hl,0
+ bcall(_cphlde)
+ jr nz,SKIP_PIC_LOOP
+ ld b,5
+DECCURSOR_LOOP:
+ call DECCURSOR
+ djnz DECCURSOR_LOOP
+ jr UP_LOOP
+
+
+DECCURSOR:
+ ld hl,(min_adress)
+ ex de,hl
+ ld hl,(cursor_adress)
+ dec hl
+ bcall(_cphlde)
+ jr z,RETTO__OUTPUT_PAGE
+ ld (cursor_adress),hl
+ ret
+RETTO__OUTPUT_PAGE:
+ pop hl
+ jp OUTPUT_PAGE
+
+
+
+
+ScreenVPutMap:
+ res textwrite,(iy+sgrflags)
+ bcall(_vputmap)
+ set textwrite,(iy+sgrflags)
+ ret
+
+SCROLL_BETASHELL:
+ jp betashell

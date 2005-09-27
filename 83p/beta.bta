@@ -3,212 +3,1084 @@
 #define EQU .equ
 #define end .end
 #define END .end
-#include "ti83asm.inc"
-plugflags	EQU       33          ; IY OFFSET VALUE
-digitnumber	EQU       0
-digit1		EQU       1
-digit2		EQU       2
-;		EQU       3
-;PWiskunde	EQU       4
-;PNatuurkunde	EQU       5
-;PScheikunde	EQU       6
-;PBiologie	EQU       7
-;
-ExtraPlugFlags	EQU       34          ; IY OFFSET VALUE
-XWiskunde	EQU       0
-XNatuurkunde	EQU       1
-XScheikunde	EQU       2
-XBiologie	EQU       3
-Xcalc		EQU       4
-Xsumm		EQU       5
-XNoSubject	EQU       6
-;asm_flag2_7	EQU       7
-;
-;asm_flag3	EQU       35          ; IY OFFSET VALUE
-;asm_flag3_0	EQU       0
-;asm_flag3_1	EQU       1
-;asm_flag3_2	EQU       2
-;asm_flag3_3	EQU       3
-;asm_flag3_4	EQU       4
-;asm_flag3_5	EQU       5
-;asm_flag3_6	EQU       6
-;asm_flag3_7	EQU       7
+#include "ti83asm.inc"		; TI-83 code
+;#include "ti83plus.inc"	; TI-83+ code
 
-;Some flags for plugins
+#define Square(aa,bb,cc,dd)	ld bc,aa*256+bb	\ ld de,cc*256+dd	\ call SQUARE
 
-;PlugProtected	EQU	0		; As soon as the text editor is ready, PlugText flag will be
-PlugText	EQU	0		; replaced with PlugProtected flag
-PlugNewText	EQU	1
-PlugBasic	EQU	2
+; Beta XP text format tags:
+
+;tag_		equ	$00
+tag_Return	equ	$D6	; D6
+;tag_		equ	$ED
+;tag_		equ	$EE
+;tag_		equ	$EF
+;tag_		equ	$F0
+;tag_		equ	$F1
+;tag_		equ	$F2
+;tag_		equ	$F3
+;tag_		equ	$F4
+;tag_		equ	$F5
+;tag_		equ	$F6
+tag_Author	equ	$F7	; F7 [text] F7
+tag_Title	equ	$F8	; F8 [text] F8
+tag_Square	equ	$F9	; F9 [x1] [y1] [x2] [y2] [op] F9
+tag_Line	equ	$FA	; FA [x1] [y1] [x2] [y2] [op] FA
+tag_Picture	equ	$FB	; FB [x] [y] [width] [height] [pic] [length H] [length L] FB
+tag_FreeText	equ	$FC	; FC [x] [y] [text] FC
+tag_Invert	equ	$FD	; FD [text] FD
+tag_Tab		equ	$FE	; FE
+tag_Page_End	equ	$FF	; FF
+
+; Flags:
+SelectFlags	EQU	asm_flag1
+;		EQU	7
+;		EQU	6
+;		EQU	5
+;		EQU	4
+xCalc		EQU	3
+xText		EQU	2
+;		EQU	1
+;		EQU	0
+
+Properties	EQU	asm_flag2
+;		EQU	7
+;		EQU	6
+;		EQU	5
+;		EQU	4
+;xCalc		EQU	3
+;xText		EQU	2
+;		EQU	1
+;		EQU	0
+
+BetaFlags	EQU	asm_flag3
+LftMenu		EQU	0
+MenuInDisplay	EQU	1
+Pic1stApp	EQU	2
 ;		EQU	3
-PlugWI		EQU	4
-PlugNA		EQU	5
-PlugSK		EQU	6
-PlugBI		EQU	7
+;		EQU	4
+;		EQU	5
+;		EQU	6
+;		EQU	7
 
-PLUGIN_COUNT	EQU	$8265
-PLUGIN_LIST	EQU	$8266
+
+; key equates:
+key_down		EQU	$01
+key_left		EQU	$02
+key_right		EQU	$03
+key_up			EQU	$04
+key_enter		EQU	$09
+key_clear		EQU	$0F
+key_3			EQU	$12
+key_2			EQU	$1A
+key_1			EQU	$22
+key_4			EQU	$23
+key_comma		EQU	$25
+key_log			EQU	$2C
+key_graph		EQU	$31
+key_trace		EQU	$32
+key_zoom		EQU	$33
+key_window		EQU	$34
+key_Y			EQU	$35
+key_quit		EQU	$37
+
+
+; RAM area used by beta:
+
+; System RAM (should never be cleared inside beta)
+SAVESP		EQU	Statvars+00
+;		EQU	Statvars+01
+BetaName	EQU	Statvars+02
+;		EQU	Statvars+03
+;		EQU	Statvars+04
+;		EQU	Statvars+05
+;		EQU	Statvars+06
+;		EQU	Statvars+07
+;		EQU	Statvars+08
+;		EQU	Statvars+09
+;		EQU	Statvars+10
+				 
+; misc RAM			 
+CURRENT_ADRESS	EQU	Statvars+11
+;		EQU	Statvars+12
+UP_OR_DOWN	EQU	Statvars+13
+;		EQU	Statvars+14
+ASAVE		EQU	Statvars+15
+				 
+; Navigation RAM		 
+Cursor_Adress	EQU	Statvars+16
+;		EQU	Statvars+17
+Min_Adress	EQU	Statvars+18
+;		EQU	Statvars+19
+Max_Adress	EQU	Statvars+20
+;		EQU	Statvars+21
+				 
+; Navigation RAM Backup		 
+Cursor_Adress2	EQU	Statvars+22
+;		EQU	Statvars+23
+Min_Adress2	EQU	Statvars+24
+;		EQU	Statvars+25
+Max_Adress2	EQU	Statvars+26
+;		EQU	Statvars+27
+				 
+; Picture RAM			 
+X		EQU	Statvars+28
+Y		EQU	Statvars+29
+Width		EQU	Statvars+30
+Height		EQU	Statvars+31
+PIC_CURRENT	EQU	Statvars+32
+;		EQU	Statvars+33
+PIC_MAX		EQU	Statvars+34
+;		EQU	Statvars+35
+					 
+; Square routine			 
+sq_length	EQU	Statvars+36
+sq_height	EQU	Statvars+37
+point1bit	EQU	Statvars+38
+point1		EQU	Statvars+39
+;		EQU	Statvars+40
+point2bit	EQU	Statvars+41
+point2		EQU	Statvars+42
+;		EQU	Statvars+43
+operation	EQU	Statvars+44
+				 	 
+; Menu RAM			 
+LeftMenuCur	EQU	Statvars+45
+RightMenuCur	EQU	Statvars+46
+String_Length	EQU	Statvars+47
+String_Adress	EQU	Statvars+48
+;		EQU	Statvars+49
+Author		EQU	Statvars+50
+;		EQU	Statvars+51
+String_temp	EQU	Statvars+52
+
+Statvars_max	EQU	Statvars+531
+
+
+
+
+
+; RAM equates
+LftMenuCur	EQU	LeftMenuCur
+RgtMenuCur	EQU	RightMenuCur
+Description	EQU	String_Temp
+
 
 
 .LIST
 .org progstart
- jr START			; Jumps to actual beginning
-VERSION:
- .db "2.4",0			; version number
-START:
- di				; disables interrupt programs
- ld (savesp),sp			; save sp register
-MAIN_MENU:			; The main menu of the program
- ld hl,BETALOGO			; Loads background image
- ld de,plotsscreen
- ld bc,768
- ldir
- bcall(_grbufcpy_V)
- ld hl,$332E			; outputs version number
- ld (pencol),hl
- ld hl,VERSION
- bcall(_vputs)
-KEY_LOOP:
- call BETAKEY
- cp 143
- jp z,WISKUNDE
- cp 144
- jp z,NATUURKUNDE
- cp 145
- jp z,SCHEIKUNDE
- cp 146
- jp z,BIOLOGIE
- cp 147
- jr z,ALLPLUGINS
- cp 64
- jr nz,KEY_LOOP
+BEGINNING_OF_BETA:
 
-EXIT:
- res oninterrupt,(iy+onflags)
- ld sp,(savesp)			; Puts original sp register back
- bcall(_grbufclr)
- bcall(_clrtxtshd)
+;; check if beta is executed on the right calc
+; ld hl,progstart
+; ld de,BEGINNING_OF_BETA	; compare system progstart with actual progstart
+; ld a,h				; no _cphlde because it would cause a crash if incorrect calc
+; cp d
+; ret nz				; Exit immediately if incorrect calc
+; ld a,l
+; cp e
+; ret nz				; Exit immediately if incorrect calc
+;;
+;;; increase speed to maximum
+;; bcall(_GetBaseVer)		; OS version in A, B
+;; cp 2				; check major version
+;; jr nc,Above112			; if 2.x, then > 1.12
+;; cp 1				; if 0.x, then < 1.12
+;; jr nz,Below112			; major version = 1
+;; ld a,b
+;; cp 13				; check minor version
+;; jr c,Below112			; C if minor version < 13
+;;Above112:
+;; ld a,$FF			; set fastest speed possible
+;; bcall(_SetExSpeed)
+;; jr Done
+;;Below112:			; earlier than 1.12
+;;Done:
+
+
+
+; Save Beta's program name
+ ld hl,Op1
+ ld de,BetaName
+ ld bc,9
+ ldir
+
+; Clear Screen
  bcall(_clrLCDFull)
-; bcall(_JforceCmdnochar)		; Commented out because it eats your TI's memory (scary)
- call _homeup
- ei
+
+; (re)set flags
+ res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
+; res 2,(iy+50)			; No large font on graph screen			; TI-83+ code
+; set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only		; TI-83+ code
+ res plotLoc,(iy+plotflags)	; TI-83 code
+ set textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+
+; Save SP register
+ ld (savesp),sp
+
+; Get select flags
+ ld a,(FlagsSave)
+;| or %00001100		; make sure calcs and texts are selected
+ ld (iy+SelectFlags),a
+
+ ld hl,plotsscreen
+ ld de,savesscreen
+ ld bc,768
+ ldir			; copy graph screen to buffer
+
+; Start Beta
+BETASHELL:
+
+ set LftMenu,(iy+BetaFlags)
+ set MenuInDisplay,(iy+BetaFlags)
+
+
+
+
+
+
+
+
+
+
+
+ call DRAWMENU
+
+ ld a,1
+ ld (RgtMenuCur),a
+
+
+
+
+UPDATE_MENU:
+ call DELETE_LEFT
+
+ ld a,1
+ ld (LftMenuCur),a
+
+ vLocate(44,6)
+ ld a,$D0
+ bit XText,(iy+SelectFlags)
+ call z,LOAD_EMPTY
+ bcall(_vputmap)
+
+ vLocate(44,12)
+ ld a,$D0
+ bit XCalc,(iy+SelectFlags)
+ call z,LOAD_EMPTY
+ bcall(_vputmap)
+
+;| vLocate(44,18)
+;| ld a,$D0
+;| bit XScheikunde,(iy+SelectFlags)
+;| call z,LOAD_EMPTY
+;| bcall(_vputmap)
+
+;| vLocate(44,24)
+;| ld a,$D0
+;| bit XNoSubject,(iy+SelectFlags)
+;| call z,LOAD_EMPTY
+;| bcall(_vputmap)
+
+ bcall(_zeroop1)
+ call _FindBetaUp
+ jp c,NONE_FOUND
+
+ call OUTPUT_PROGRAM_LIST_UP
+
+ bit LftMenu,(iy+BetaFlags)
+ call nz,PLACE_LEFT
+
+LMENU_LOOP:
+
+ call _chkfindplugin
+ call CLEAR_PROGRAM_INFO
+ vLocate(40,40)
+ call OUTPUT_AUTHOR
+
+ vLocate(2,56)
+ call OUTPUT_DESCRIPTION
+
+
+ bit LftMenu,(iy+BetaFlags)
+ jp z,RMENU_LOOP
+
+ bcall(_grbufcpy)
+LMENU_KEYLOOP:
+ call BETAKEY
+ cp key_up
+ jr z,LEFT_UP
+ cp key_down
+ jr z,LEFT_DOWN
+ cp key_right
+ jr z,RIGHT_MENU
+ cp key_enter
+ jr z,LEFT_ENTER
+ jr LMENU_KEYLOOP
+
+LEFT_UP:
+ ld a,(LftMenuCur)
+ cp 1
+ jr z,PLUG_UP			; selected plugin is at the top->scroll entire list
+ dec a
+ ld (x),a
+ call _FindBetaDown		; update op1
+; jr c,LMENU_KEYLOOP		; should not be possible
+; jp c,_errTolTooSmall		; so why jump to some weird exception when the impossible happens?
+ call DELETE_LEFT
+ ld a,(x)
+ ld (LftMenuCur),a
+ call PLACE_LEFT
+ jr LMENU_LOOP
+
+PLUG_UP:		; scroll list up
+ call _FindBetaDown
+ jr c,LMENU_KEYLOOP
+ call OUTPUT_PROGRAM_LIST_UP
+ jr LMENU_LOOP
+
+LEFT_DOWN:
+ ld a,(LftMenuCur)
+ cp 9
+ jr z,PLUG_DOWN			; selected plugin is at the bottom->scroll entire list
+ inc a
+ ld (x),a
+ call _FindBetaUp
+ jr c,LMENU_KEYLOOP
+ call DELETE_LEFT
+ ld a,(x)
+ ld (LftMenuCur),a
+ call PLACE_LEFT
+ jp LMENU_LOOP
+
+PLUG_DOWN:
+ call _FindBetaUp
+ jr c,LMENU_KEYLOOP
+ call OUTPUT_PROGRAM_LIST_DOWN
+ jp LMENU_LOOP
+
+LEFT_ENTER:
+ res MenuInDisplay,(iy+BetaFlags)
+ bit xCalc,(iy+properties)
+ jp nz,CALC_PLUG		; excecute the program
+ jp z,SIMPLE_SCROLL		; view the textfile
+
+LOAD_EMPTY:
+ ld a,$06
  ret
 
-ALLPLUGINS:
- ld a,255
- ld (iy+extraplugflags),a
- jp BETASHELL
+RIGHT_MENU:
+ res LftMenu,(iy+BetaFlags)
+ call DELETE_LEFT
+ call PLACE_RIGHT
 
+RMENU_LOOP:
+ bcall(_grbufcpy)
 
-;;
-;;	Routines
-;;
+RMENU_KEYLOOP:
+ call BETAKEY
+ cp key_up
+ jr z,RIGHT_UP
+ cp key_down
+ jr z,RIGHT_DOWN
+ cp key_left
+ jr z,LEFT_MENU
+ cp key_enter
+ jr z,RIGHT_ENTER
+ jr RMENU_KEYLOOP
 
-
-;PAUSE:				; Same as basics Pause
-; ld hl,$0107
-; ld (currow),hl
-; ld hl,ENTER
-; bcall(_puts)
-;PAUSE_LOOP:
-; call BETAKEY
-; cp 5
-; jr nz,PAUSE_LOOP
-; ret
-
-EXECBASIC:			; Executes a basic program
- push hl
- ld a,132
- bcall(_setxxop1)
- bcall(_storand)
- bcall(_zerooop1)
- pop hl
- ld de,op1
- ld bc,10
- ldir
-; bcall(_chkfindsym)	; became obsolete because the plugin support already looked up the prog
-; jr c,ERRUNDEFINED
- Bit ProgExecuting, (iy + newDispf)
+RIGHT_UP:
+ ld a,(RightMenuCur)
+ cp 1
+ jr z,RMENU_KEYLOOP
+ dec a
  push af
- set ProgExecuting,(iy+newDispf)
- bcall(_parseInp)
+ call DELETE_RIGHT
  pop af
- ret nz
- res ProgExecuting,(iy+newDispf)
+ ld (RightMenuCur),a
+ call PLACE_RIGHT
+ jr RMENU_LOOP
+
+RIGHT_DOWN:
+ ld a,(RightMenuCur)
+ cp 2
+ jr z,RMENU_KEYLOOP
+ inc a
+ push af
+ call DELETE_RIGHT
+ pop af
+ ld (RightMenuCur),a
+ call PLACE_RIGHT
+ jr RMENU_LOOP
+
+LEFT_MENU:
+ ld a,(LeftMenuCur)
+ and a
+ jr z,RMENU_KEYLOOP
+ 
+ set LftMenu,(iy+BetaFlags)
+ call DELETE_RIGHT
+ call PLACE_LEFT
+ jp LMENU_LOOP
+
+RIGHT_ENTER:
+ ld a,(RightMenuCur)
+
+ ld b,%00000100			; Text
+ cp 1
+ jr z,XOR_IT
+
+ ld b,%00001000			; Calc
+XOR_IT:
+ ld a,b
+ xor (iy+SelectFlags)
+ ld (iy+SelectFlags),a
+ jp UPDATE_MENU
+
+NONE_FOUND:
+ ld a,(LftMenuCur)
+ and a
+ jr z,RMENU_KEYLOOP
+ call CLEAR_PROGRAM_LIST
+ call CLEAR_PROGRAM_INFO
+ Text(6,1,NONE_TXT)
+ 
+ res LftMenu,(iy+BetaFlags)
+ call DELETE_LEFT
+ call PLACE_RIGHT
+ xor a
+ ld (LeftMenuCur),a
+ jp RMENU_LOOP
+
+
+OUTPUT_AUTHOR:
+; Outputs the author string. No normal routine can be used since this string is neither leading-length nor zero terminated
+ ld hl,(author)
+ ld a,(author_length)
+ ld b,a
+OUTPUT_AUTHOR_LOOP:
+ ld a,(hl)
+ bcall(_VPutMap)
+ inc hl
+ djnz OUTPUT_AUTHOR_LOOP
  ret
 
-;ERRUNDEFINED:
-; bcall(_clrLCDFull)
-; call _homeup
-; ld hl,T_ERRUNDEFINED
-; bcall(_puts)
-; call PAUSE
-; jp MAIN_MENU 
+OUTPUT_DESCRIPTION:
+; Outputs the description string. No normal routine can be used since this string is neither leading-length nor zero terminated
+ ld hl,(description)
+ ld a,(description_length)
+ ld b,a
+OUTPUT_DESCRIPTION_LOOP:
+ ld a,(hl)
+ bcall(_VPutMap)
+ inc hl
+ djnz OUTPUT_DESCRIPTION_LOOP
+ ret
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DELETE_LEFT:
+ call CALCULATE_LEFT
+ ld a,$06
+ bcall(_vputmap)
+ ret
+
+PLACE_LEFT:
+ call CALCULATE_LEFT
+ ld a,$05
+ bcall(_vputmap)
+
+CALCULATE_LEFT:
+ ld a,(LeftMenuCur)
+ and a
+ jr z,CALCULATE_INVALID
+ ld l,a
+ ld h,6
+ bcall(_htimesl)
+ ld a,l
+ sub 5
+ ld h,a
+ ld l,2
+ ld (pencol),hl
+ ret
+
+CALCULATE_INVALID:
+ pop hl
+ ret
+
+DELETE_RIGHT:
+ call CALCULATE_RIGHT
+ ld a,$06
+ bcall(_vputmap)
+ ret
+
+PLACE_RIGHT:
+ call CALCULATE_RIGHT
+ ld a,$05
+ bcall(_vputmap)
+
+CALCULATE_RIGHT:
+ ld a,(RightMenuCur)
+ ld l,a
+ ld h,6
+ bcall(_htimesl)
+ ld h,l
+ ld l,40
+ ld (pencol),hl
+ ret
+
+
+
+DRAWMENU:
+ bcall(_GrBufClr)
+
+ LineChange
+
+ Square(0,0,38,0)
+ Square(38,5,94,5)
+ Square(38,31,94,31)
+ Square(38,39,94,39)
+ Square(38,47,94,47)
+ Square(0,55,94,55)
+
+ Square(0,0,0,63)
+ Square(38,0,38,55)
+ Square(94,5,94,63)
+ Square(0,63,94,63)
+
+;| Text(48,6,WI_TXT)
+ Text(48,6,TEXT_TXT)
+;| Text(48,12,NA_TXT)
+ Text(48,12,CALC_TXT)
+;| Text(48,18,SK_TXT)
+;| Text(48,24,OV_TXT)
+ Text(40,32,AUTHOR_TXT)
+ Text(40,48,DESCRIPTION_TXT)
+
+ ret
+
+
+OUTPUT_PROGRAM_LIST_UP:
+ call CLEAR_PROGRAM_LIST
+
+
+ bcall(_op1toop4)
+ ld b,9		; there are 9 slots in the menu
+UP_PROGRAM_LIST_LOOP:
+ push bc
+ ld h,b			; 55-(b*6)->penrow
+ ld l,6
+ bcall(_htimesl)
+ ld a,55
+ sub l
+ ld h,a
+ ld l,6
+ ld (pencol),hl
+
+ ld hl,op1+1
+ bcall(_vputs)		; outputs plugin name
+ call _FindBetaUp	; find next Plugin
+ jr c,UP_PROGRAM_LIST_LOOP_END
+ pop bc
+ djnz UP_PROGRAM_LIST_LOOP
+ push bc
+UP_PROGRAM_LIST_LOOP_END:
+ pop bc
+ bcall(_op4toop1)
+ ret
+
+
+
+
+OUTPUT_PROGRAM_LIST_DOWN:
+ call CLEAR_PROGRAM_LIST
+
+ bcall(_op1toop4)
+ ld b,9		; there are 9 slots in the menu
+DN_PROGRAM_LIST_LOOP:
+ push bc
+ ld h,b			; (b*6)-5->penrow
+ ld l,6
+ bcall(_htimesl)
+ ld a,l
+ sub 5
+ ld h,a
+ ld l,6
+ ld (pencol),hl
+
+ ld hl,op1+1
+ bcall(_vputs)		; outputs plugin name
+ call _FindBetaDown	; Find next Plugin
+ jr c,DN_PROGRAM_LIST_LOOP_END
+ pop bc
+ djnz DN_PROGRAM_LIST_LOOP
+ push bc
+DN_PROGRAM_LIST_LOOP_END:
+ pop bc
+ bcall(_op4toop1)
+ ret
+
+CLEAR_PROGRAM_LIST:
+ LineOff
+ Square(6,1,37,54)	; clear program list
+ ret
+
+CLEAR_PROGRAM_INFO:
+ LineOff
+ Square(2,56,93,61)	; clear author
+ Square(40,40,93,45)	; clear description
+ ret
+
+;OPEN_PLUGIN:			; There is not a single reference to this label! so much for efficiency..
+; bcall(_op5toop1)		; op5= first plugin in the list
+; call _chkfindplugin		; Gets plugin settings
+;
+; bit XText,(iy+Properties)
+; jr nz,SIMPLE_SCROLL		; goto scroll engine for text plugins
+; bit XCalc,(iy+Properties)
+; jr nz,CALC_PLUG		; goto basic engine for programs
+
+
+
+
+
+
+
+;;
+;;		; Start calculator
+;;
+
+
+CALC_PLUG:
+
+ bcall(_op1toop2)
+ call SAVE_SELECT_FLAGS
+ bcall(_op2toop1)
+
+ res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+; res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+
+ res oninterrupt,(iy+onflags)
+ ld sp,(savesp)
+ bcall(_grbufclr)
+ ld hl,0
+ ld (currow),hl
+ ld a,$20
+ bcall(_putmap)
+ bcall(_clrscrnfull)
+ bcall(_clrtxtshd)
+; bcall(_JforceCmdnochar)		; This is the cause of the famous Beta NT memory bug
+
+ set ProgExecuting,(iy+newDispf)
+ bcall(_ParseInp)
+ res progExecuting,(iy+newDispf)
+ ret
+
+
+
+
+#include "scroll.bta"
+
+#include ".\source\PlugAPI.asm"
+
+
+
+
+
+
+
+;BETAKEY:
+; bcall(_runindicoff)
+;; bcall(_op1toop3)		; TI-83+ code (prevents MirageOS bug)
+; bcall(_getkey)
+;; bcall(_op3toop1)		; TI-83+ code (prevents MirageOS bug)
+;
+; bit oninterrupt,(iy+onflags)	; On key
+; jr nz,EXIT
+;
+; cp key_clear
+; jr z,EXIT
+; cp key_quit
+; jr z,EXIT
+; ld b,%10001100		; Wiskunde
+; cp key_Y
+; jr z,SHORTCUT
+; ld b,%01001100		; Natuurkunde
+; cp Key_window
+; jr z,SHORTCUT
+; ld b,%00101100		; Scheikunde
+; cp Key_zoom
+; jr z,SHORTCUT
+; ld b,%00011100		; Overigen
+; cp Key_Trace
+; jr z,SHORTCUT
+; ld b,%11111100		; Alles
+; cp Key_graph
+; jr z,SHORTCUT
+; ret
+;
+;SHORTCUT:
+; ld a,b
+; ld (iy+SelectFlags),a
+; bit MenuInDisplay,(iy+BetaFlags)
+; jr z,BETASHELL
+; jr UPDATE_MENU
+
+; Betakey is the default keyloop containing all the global keys
+; Returns:
+; a	The keycode
 BETAKEY:
  bcall(_runindicoff)
- bcall(_getkey)
- bit oninterrupt,(iy+onflags)
- jr nz,EXIT
- cp 9
- jr z,EXIT
- cp 73
- jp z,Wiskunde		;SHORTCUT_WI
- cp 72
- jp z,Natuurkunde	;SHORTCUT_NA
- cp 46
- jp z,Scheikunde	;SHORTCUT_SK
- cp 90
- jp z,Biologie		;SHORTCUT_BI
- cp 68
- jp z,AllPlugins	;SHORTCUT_PLUGINS
+
+GETKEY_LOOP:
+ bcall(_GetCSC)
+ and a
+ jr z,GETKEY_LOOP
+
+ bit oninterrupt,(iy+onflags)	; On key
+ jp nz,EXIT
+
+ cp key_clear
+ jp z,EXIT
+ cp key_quit
+ jp z,EXIT
  ret
 
+CPOP1OP2:
+; Compares the program names in op1 and op2, the _cpop1op2 routine compares them as floating point
+; Input:
+; op1: program name to compare
+; op2: program name to compare
+; Output:
+; zero flag set if op1=op2
+; zero flag reset if op1!=op2
+; Destroys:
+; Registers hl, de, b, a, c
+ ld hl,op1+1
+ ld de,op2+1
+ ld b,8
+CPOP1OP2_LOOP:
+ ld a,(de)
+ ld c,(hl)
+ cp c
+ ret nz
+ inc hl
+ inc de
+ djnz CPOP1OP2_LOOP
+ ret
+
+
+SQUARE:
+; Puts a rectangle in the graph backup buffer or a straight line
+; Input:
+; b: x coordinate of upper left corner
+; c: y coordinate of upper left corner
+; d: x coordinate of lower right corner
+; e: y coordinate of lower right corner
+; h: 0 - pixel off operation
+;    1 - pixel on operation
+;    2 - pixel change operation (xor)
+; @require b<96 && c<64 && d<96 && e<64 && b<=d && c<=e
+; to draw a line, make sure b=d or c=e
+; to draw a point, make sure b=d and c=e
+
+ ld a,h
+ ld (operation),a
+ push bc
+ ld a,e
+ sub c
+ inc a
+ ld (sq_height),a
+
+ ld h,0
+ ld l,b
+ ld a,8
+ bcall(_divhlbya)
+ ld b,l
+ push bc
+
+ ld l,d
+ ld a,8
+ bcall(_divhlbya)
+ pop bc
+ ld a,l
+ sub b
+ dec a
+ ld (sq_length),a
+
+ pop bc
+ push de
+ ld l,b
+ ld h,0
+ ld a,8
+ bcall(_divhlbya)
+ ld b,a
+ ld a,7
+ sub b
+
+		
+ ld b,a			; 0	; %00000001
+ inc b			; 1	; %00000011
+ xor a			; 2	; %00000111
+SQ_UNTIL_LOOP:		; 3	; %00001111
+ scf			; 4	; %00011111
+ rla			; 5	; %00111111
+ djnz SQ_UNTIL_LOOP	; 6	; %01111111
+			; 7	; %11111111
+
+ ld (point1bit),a
+ ld a,l
+ ld l,c
+ ld h,12
+ bcall(_htimesl)
+ add a,l
+ ld l,a
+ jr nc,$+3
+ inc h
+ ld de,plotsscreen
+ add hl,de
+ ld (point1),hl
+
+ pop de
+ ld l,d
+ ld h,0
+ ld a,8
+ bcall(_divhlbya)
+ ld b,a
+ ld a,7
+ sub b
+
+
+ ld b,a			; 0	; %11111111
+ ld a,7			; 1	; %11111110
+ sub b			; 2	; %11111100
+ ld b,a			; 3	; %11111000
+ inc b			; 4	; %11110000
+ xor a			; 5	; %11100000
+SQ_FROM_LOOP:		; 6	; %11000000
+ scf			; 7	; %10000000
+ rra
+ djnz SQ_FROM_LOOP
+
+
+
+ ld (point2bit),a
+ ld a,l
+ ld l,e
+ ld h,12
+ bcall(_htimesl)
+ add a,l
+ ld l,a
+ jr nc,$+3
+ inc h
+ ld de,plotsscreen
+ add hl,de
+ ld (point2),hl
+
+
+
+ ld hl,(point1)
+ ld a,(sq_height)
+ ld b,a
+
+ ld a,(sq_length)
+ cp $FF
+ jr z,SMALL_SQUARE
+
+SQUARE_LOOP:
+ push bc
+ ld a,(point1bit)
+ call PERFORM_OPERATION
+ inc hl
+
+ ld a,(sq_length)
+ and a
+ jr z,NO_LOOP
+ ld b,a
+SQUARE_FILL_LOOP:
+ push bc
+ ld a,$FF
+ call PERFORM_OPERATION
+ pop bc
+ inc hl
+ djnz SQUARE_FILL_LOOP
+
+NO_LOOP:
+
+ ld a,(point2bit)
+ call PERFORM_OPERATION
+
+ ld a,(sq_length)
+ ld b,a
+ ld a,11
+ sub b
+ ld b,a
+SQ_SKIP_LOOP:
+ inc hl
+ djnz SQ_SKIP_LOOP
+ pop bc
+ djnz SQUARE_LOOP
+
+ ld a,(operation)
+ ld h,a
+ ret
+
+SMALL_SQUARE:
+ push bc
+ ld a,(point1bit)
+ ld b,a
+ ld a,(point2bit)
+ and b
+ call PERFORM_OPERATION
+ 
+ ld de,12
+ add hl,de
+ pop bc
+ djnz SMALL_SQUARE
+
+ ld a,(operation)
+ ld h,a
+ ret
+
+PERFORM_OPERATION:
+ ld b,a
+ ld a,(operation)
+ and a
+ jr z,PXL_OFF
+ cp 1
+ jr z,PXL_ON
+
+PXL_CHANGE:
+ ld a,b
+ xor (hl)
+ ld (hl),a
+ ret
+
+PXL_OFF:
+ ld a,255
+ xor b
+ and (hl)
+ ld (hl),a
+ ret
+
+PXL_ON:
+ ld a,b
+ or (hl)
+ ld (hl),a
+ ret
+
+
+
+
+
+
+
+SAVE_SELECT_FLAGS:
+ ld hl,BetaName
+ ld de,Op1
+ ld bc,9
+ ldir
+
+ bcall(_chkfindsym)
+ ex de,hl
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ push hl		; hl=program adress
+ ld hl,END_OF_BETA-progstart	; length squished	; TI-83 code
+; ld hl,END_OF_BETA-progstart+2	; length squished+length bytes	; TI-83+ code
+ bcall(_cphlde)		; check lenght to see if beta is unquished
+ pop hl
+ ret nz
+ add hl,de
+ ld a,(iy+SelectFlags)
+ ld (hl),a
+ ret
+
+EXIT:
+
+ call SAVE_SELECT_FLAGS
+
+ res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+; res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+
+ res oninterrupt,(iy+onflags)
+ ld sp,(savesp)
+ bcall(_grbufclr)
+ ld hl,0
+ ld (currow),hl
+ ld a,$20
+ bcall(_putmap)
+ bcall(_clrscrnfull)
+ bcall(_clrtxtshd)
+
+ ld hl,savesscreen
+ ld de,plotsscreen
+ ld bc,768
+ ldir			; restore graph screen
+
+; bcall(_JforceCmdnochar)		; This is the cause of the famous Beta NT memory bug
+ ret
+
+
+
+
+
+
 ;;
-;;	Subprogs
+;;	; Data
 ;;
 
-#include "Wi.bta"
-#include "na.bta"
-#include "sk.bta"
-#include "bi.bta"
-#include "plugin.bta"
-
-;;
-;;	Data
-;;
-
-BETALOGO:
-#include "logo.bta"
-
-SAVESP:
- .db 0,0
-T_ERRUNDEFINED:
- .db "Het onderdeel   "
- .db "is niet         "
- .db "ge",$9D,"nstalleerd",0
-ENTER:
- .db "Druk op enter",0
-
-;;
-;;	Beta's own Stack
-;;
-
-ASAVE:
- .db 0
-BSAVE:
- .db 0
-CSAVE:
- .db 0
-DSAVE:
- .db 0
-ESAVE:
- .db 0
-HSAVE:
- .db 0
-LSAVE:
- .db 0
 
 
+#include "language.bta"
+
+
+FlagsSave:
+ .db $FF
+
+
+
+
+
+
+
+; Appendix A:
+; Textplugin should look like this:
+;
+; .db $D9,$3F				; Stop\n
+; .db %10000000				; Flags
+; .db tag_title,"[title]",tag_title
+; .db tag_author,"[author]",tag_author
+
+; .db "Dit is regel 1",tag_return		; Text itself
+; .db "Dit is r...
+
+
+
+
+; Appendix B: Calcplugin should look like this:
+;
+; .db $3F			; \n
+; .db $2A,$3F			; "\n
+; .db $2A,"[title]",$3F		; "[title]\n
+; .db $2A,"[author]",$3F	; "[author]\n
+;				; Beginning of calc
+
+
+END_OF_BETA:
 .end
 END

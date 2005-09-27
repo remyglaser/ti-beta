@@ -1,0 +1,1645 @@
+.NOLIST
+#define     equ             .equ
+#define     EQU             .equ
+#define     END             .end
+.LIST
+_CLRLCDFULL             equ     4755h
+_runIndicOff            equ     4795h
+_clrScrnFull            equ     475Dh
+_puts                   equ     470Dh
+_CLOSEPROG              equ     4E06h
+_ZEROOP1                equ     428Eh
+_putmap                 equ     4701h
+_OP1TOOP5               equ     41BEh
+_OP5TOOP1               equ     419Eh
+__bank_ret              equ     0000h
+_ILINE                  equ     4AE4h
+_getcsc                 equ     4014h
+_GRBUFCPY               equ     4B9Ch
+_vputmap                equ     477Dh
+_cphlde                 equ     4004h
+_divHLbyA               equ     400Ch
+_HTIMESL                equ     4382h
+_VPUTBLANK              equ     4C53h
+_SFONT_LEN              equ     4A6Ch
+_CHKFINDSYM             equ     442Ah
+_EDITPROG               equ     4E02h
+_GRBUFCLR               equ     515Bh
+_CREATEPROG             equ     448Ah
+_OP4TOOP1               equ     419Ah
+_closeEditBuf           equ     4C2Bh
+_putc                   equ     4705h
+_RSTRSHADOW             equ     47A1h
+_saveCmdShadow          equ     4799h
+_OP1TOOP6               equ     41BAh
+_FindAlphaup            equ     4E1Ah
+_FindAlphadn            equ     4E1Eh
+_CLRTXTSHD              equ     4765h
+
+.org        9327h
+
+ 9327   CD5547    call _CLRLCDFULL
+ 932A   CD9547    call _runIndicOff
+ 932D   FDCB09B6  res  6, (iy+09h)
+ 9331   FDCB14FE  set  7, (iy+14h)
+ 9335   FDCB028E  res  1, (iy+02h)
+ 9339   FDCB0896  res  2, (iy+08h)
+ 933D   ED738F85  ld   (0858Fh), sp 
+ 9341   AF        xor  a       
+ 9342   FD7721    ld   (iy+21h), a
+ 9345   FDCB21CE  set  1, (iy+21h)
+ 9349   219285    ld   hl, 08592h
+ 934C   0615      ld   b, 15h
+
+Label1:
+ 934E   3600      ld   (hl), 00h
+ 9350   23        inc  hl      
+ 9351   10FB      djnz Label1
+
+Label10:
+ 9353   CD5D47    call _clrScrnFull
+ 9356   210001    ld   hl, 00100h
+ 9359   220C80    ld   (0800Ch), hl 
+ 935C   21AE9E    ld   hl, Str1
+ 935F   CD0D47    call _puts
+ 9362   210200    ld   hl, 0002h
+ 9365   220C80    ld   (0800Ch), hl 
+ 9368   21BC9E    ld   hl, Str2
+ 936B   CD0D47    call _puts
+ 936E   210300    ld   hl, 0003h
+ 9371   220C80    ld   (0800Ch), hl 
+ 9374   21C59E    ld   hl, Str3
+ 9377   CD0D47    call _puts
+ 937A   210500    ld   hl, 0005h
+ 937D   220C80    ld   (0800Ch), hl 
+ 9380   21DE9E    ld   hl, Str4
+ 9383   CD0D47    call _puts
+ 9386   FDCB2146  bit  0, (iy+21h)
+ 938A   CA9993    jp   z, Label2
+ 938D   210400    ld   hl, 0004h
+ 9390   220C80    ld   (0800Ch), hl 
+ 9393   21CF9E    ld   hl, Str5
+ 9396   CD0D47    call _puts
+
+Label2:
+ 9399   CD969D    call Label3
+ 939C   FE0F      cp   0Fh
+ 939E   CA8B94    jp   z, Label4
+ 93A1   FE22      cp   22h
+ 93A3   CA0799    jp   z, Label5
+ 93A6   FE1A      cp   1Ah
+ 93A8   CABF93    jp   z, Label6
+ 93AB   FE23      cp   23h
+ 93AD   CA7C9E    jp   z, Label7
+ 93B0   FDCB2146  bit  0, (iy+21h)
+ 93B4   CA9993    jp   z, Label2
+ 93B7   FE12      cp   12h
+ 93B9   CA7399    jp   z, Label8
+ 93BC   C39993    jp   Label2
+
+Label6:
+ 93BF   FDCB214E  bit  1, (iy+21h)
+ 93C3   CC3E99    call z, Label9
+ 93C6   DA5393    jp   c, Label10
+ 93C9   FDCB2146  bit  0, (iy+21h)
+ 93CD   C4064E    call nz, _CLOSEPROG
+ 93D0   CD8E42    call _ZEROOP1
+ 93D3   3E05      ld   a, 05h
+ 93D5   323980    ld   (08039h), a  
+ 93D8   CD4B9D    call Label11
+ 93DB   DAF298    jp   c, Label12
+
+Label85:
+ 93DE   CD5D47    call _clrScrnFull
+ 93E1   210002    ld   hl, 00200h
+ 93E4   220C80    ld   (0800Ch), hl 
+ 93E7   3E05      ld   a, 05h
+ 93E9   CD0147    call _putmap
+ 93EC   3E0D      ld   a, 0Dh
+ 93EE   320D80    ld   (0800Dh), a  
+ 93F1   3ECF      ld   a, 0CFh
+ 93F3   CD0147    call _putmap
+ 93F6   CDBE41    call _OP1TOOP5
+ 93F9   0608      ld   b, 08h
+
+Label14:
+ 93FB   2604      ld   h, 04h
+ 93FD   3E08      ld   a, 08h
+ 93FF   90        sub  b       
+ 9400   6F        ld   l, a    
+ 9401   220C80    ld   (0800Ch), hl 
+ 9404   213A80    ld   hl, 0803Ah
+ 9407   CD0D47    call _puts
+ 940A   C5        push bc      
+ 940B   CD4B9D    call Label11
+ 940E   C1        pop  bc      
+ 940F   DA1494    jp   c, Label13
+ 9412   10E7      djnz Label14
+
+Label13:
+ 9414   CD969D    call Label3
+ 9417   FE0F      cp   0Fh
+ 9419   CA5393    jp   z, Label10
+ 941C   FE04      cp   04h
+ 941E   CADA98    jp   z, Label15
+ 9421   FE01      cp   01h
+ 9423   CAE698    jp   z, Label16
+ 9426   FE09      cp   09h
+ 9428   C21494    jp   nz, Label13
+ 942B   CD9E41    call _OP5TOOP1
+
+Label87:
+ 942E   CD4F98    call Label17
+
+Label54:
+ 9431   CD8698    call Label18
+ 9434   210000    ld   hl, __bank_ret
+ 9437   225282    ld   (08252h), hl 
+
+Label26:
+ 943A   3A5382    ld   a, (08253h)  
+ 943D   47        ld   b, a    
+ 943E   3E3F      ld   a, 3Fh
+ 9440   90        sub  b       
+ 9441   4F        ld   c, a    
+ 9442   D605      sub  05h
+ 9444   5F        ld   e, a    
+ 9445   2602      ld   h, 02h
+ 9447   3A5282    ld   a, (08252h)  
+ 944A   47        ld   b, a    
+ 944B   57        ld   d, a    
+ 944C   CDE44A    call _ILINE
+ 944F   0628      ld   b, 28h
+ 9451   FDCB1296  res  2, (iy+12h)
+
+Label25:
+ 9455   78        ld   a, b    
+ 9456   329285    ld   (08592h), a  
+ 9459   06FF      ld   b, 0FFh
+
+Label24:
+ 945B   F5        push af      
+ 945C   F1        pop  af      
+ 945D   CD1440    call _getcsc
+ 9460   FDCB0966  bit  4, (iy+09h)
+ 9464   C2C096    jp   nz, Label19
+ 9467   FE01      cp   01h
+ 9469   CA4E95    jp   z, Label20
+ 946C   FE02      cp   02h
+ 946E   CADE95    jp   z, Label21
+ 9471   FE03      cp   03h
+ 9473   CA7596    jp   z, Label22
+ 9476   FE04      cp   04h
+ 9478   CAA394    jp   z, Label23
+ 947B   FE0F      cp   0Fh
+ 947D   CAC096    jp   z, Label19
+ 9480   10D9      djnz Label24
+ 9482   3A9285    ld   a, (08592h)  
+ 9485   47        ld   b, a    
+ 9486   10CD      djnz Label25
+ 9488   C33A94    jp   Label26
+
+Label4:
+ 948B   FDCB2146  bit  0, (iy+21h)
+ 948F   CA5393    jp   z, Label10
+ 9492   3AA185    ld   a, (085A1h)  
+ 9495   FD7705    ld   (iy+05h), a
+ 9498   CD9C4B    call _GRBUFCPY
+ 949B   C33A94    jp   Label26
+
+Label79:
+ 949E   FDCB21D6  set  2, (iy+21h)
+ 94A2   C9        ret          
+
+Label23:
+ 94A3   FDCB2156  bit  2, (iy+21h)
+ 94A7   C23A94    jp   nz, Label26
+ 94AA   3A5282    ld   a, (08252h)  
+ 94AD   F5        push af      
+ 94AE   CD1698    call Label27
+ 94B1   F1        pop  af      
+ 94B2   325282    ld   (08252h), a  
+ 94B5   2A9B85    ld   hl, (0859Bh) 
+ 94B8   229D85    ld   (0859Dh), hl 
+ 94BB   FD7E05    ld   a, (iy+05h)
+ 94BE   32A285    ld   (085A2h), a  
+ 94C1   CD1197    call Label28
+ 94C4   DA7D95    jp   c, Label29
+ 94C7   0602      ld   b, 02h
+
+Label33:
+ 94C9   C5        push bc      
+ 94CA   7E        ld   a, (hl) 
+ 94CB   FED6      cp   0D6h
+ 94CD   CAF294    jp   z, Label30
+ 94D0   FEFF      cp   0FFh
+ 94D2   CAEA94    jp   z, Label31
+ 94D5   CD1197    call Label28
+ 94D8   DADE94    jp   c, Label32
+ 94DB   C3C994    jp   Label33
+
+Label32:
+ 94DE   C1        pop  bc      
+ 94DF   78        ld   a, b    
+ 94E0   FE02      cp   02h
+ 94E2   CA7D95    jp   z, Label29
+ 94E5   0600      ld   b, 00h
+ 94E7   C33F95    jp   Label34
+
+Label31:
+ 94EA   C1        pop  bc      
+ 94EB   78        ld   a, b    
+ 94EC   FE02      cp   02h
+ 94EE   CA0F96    jp   z, Label35
+ 94F1   C5        push bc      
+
+Label30:
+ 94F2   C1        pop  bc      
+ 94F3   CD1197    call Label28
+ 94F6   DADE94    jp   c, Label32
+ 94F9   10CE      djnz Label33
+ 94FB   CDD396    call Label36
+ 94FE   3A5282    ld   a, (08252h)  
+ 9501   A7        and  a       
+ 9502   CA2D95    jp   z, Label37
+
+Label39:
+ 9505   CDD396    call Label36
+ 9508   DA3F95    jp   c, Label34
+ 950B   7E        ld   a, (hl) 
+ 950C   FED6      cp   0D6h
+ 950E   CA3F95    jp   z, Label34
+ 9511   FEFF      cp   0FFh
+ 9513   CA3F95    jp   z, Label34
+ 9516   CD4298    call Label38
+ 9519   4F        ld   c, a    
+ 951A   78        ld   a, b    
+ 951B   81        add  a, c    
+ 951C   47        ld   b, a    
+ 951D   C5        push bc      
+ 951E   3EFF      ld   a, 0FFh
+ 9520   90        sub  b       
+ 9521   47        ld   b, a    
+ 9522   3A5282    ld   a, (08252h)  
+ 9525   80        add  a, b    
+ 9526   C1        pop  bc      
+ 9527   D22D95    jp   nc, Label37
+ 952A   C30595    jp   Label39
+
+Label37:
+ 952D   78        ld   a, b    
+ 952E   325282    ld   (08252h), a  
+ 9531   3A5382    ld   a, (08253h)  
+ 9534   D606      sub  06h
+ 9536   325382    ld   (08253h), a  
+ 9539   CDD396    call Label36
+ 953C   C33A94    jp   Label26
+
+Label34:
+ 953F   78        ld   a, b    
+ 9540   325282    ld   (08252h), a  
+ 9543   3A5382    ld   a, (08253h)  
+ 9546   D606      sub  06h
+ 9548   325382    ld   (08253h), a  
+ 954B   C33A94    jp   Label26
+
+Label20:
+ 954E   FDCB2156  bit  2, (iy+21h)
+ 9552   C23A94    jp   nz, Label26
+ 9555   3A5282    ld   a, (08252h)  
+ 9558   F5        push af      
+ 9559   CD1698    call Label27
+ 955C   F1        pop  af      
+ 955D   325282    ld   (08252h), a  
+ 9560   2A9B85    ld   hl, (0859Bh) 
+ 9563   229D85    ld   (0859Dh), hl 
+ 9566   FD7E05    ld   a, (iy+05h)
+ 9569   32A285    ld   (085A2h), a  
+
+Label42:
+ 956C   7E        ld   a, (hl) 
+ 956D   FED6      cp   0D6h
+ 956F   CA8C95    jp   z, Label40
+ 9572   FEFF      cp   0FFh
+ 9574   CABA96    jp   z, Label41
+ 9577   CDD396    call Label36
+ 957A   D26C95    jp   nc, Label42
+
+Label29:
+ 957D   2A9D85    ld   hl, (0859Dh) 
+ 9580   229B85    ld   (0859Bh), hl 
+ 9583   3AA285    ld   a, (085A2h)  
+ 9586   FD7705    ld   (iy+05h), a
+ 9589   C33A94    jp   Label26
+
+Label40:
+ 958C   0600      ld   b, 00h
+ 958E   3A5282    ld   a, (08252h)  
+ 9591   A7        and  a       
+ 9592   CABD95    jp   z, Label43
+
+Label45:
+ 9595   CDD396    call Label36
+ 9598   DACF95    jp   c, Label44
+ 959B   7E        ld   a, (hl) 
+ 959C   FED6      cp   0D6h
+ 959E   CACF95    jp   z, Label44
+ 95A1   FEFF      cp   0FFh
+ 95A3   CACF95    jp   z, Label44
+ 95A6   CD4298    call Label38
+ 95A9   4F        ld   c, a    
+ 95AA   78        ld   a, b    
+ 95AB   81        add  a, c    
+ 95AC   47        ld   b, a    
+ 95AD   C5        push bc      
+ 95AE   3EFF      ld   a, 0FFh
+ 95B0   90        sub  b       
+ 95B1   47        ld   b, a    
+ 95B2   3A5282    ld   a, (08252h)  
+ 95B5   80        add  a, b    
+ 95B6   C1        pop  bc      
+ 95B7   D2BD95    jp   nc, Label43
+ 95BA   C39595    jp   Label45
+
+Label43:
+ 95BD   78        ld   a, b    
+ 95BE   325282    ld   (08252h), a  
+ 95C1   3A5382    ld   a, (08253h)  
+ 95C4   C606      add  a, 06h
+ 95C6   325382    ld   (08253h), a  
+ 95C9   CDD396    call Label36
+ 95CC   C33A94    jp   Label26
+
+Label44:
+ 95CF   78        ld   a, b    
+ 95D0   325282    ld   (08252h), a  
+ 95D3   3A5382    ld   a, (08253h)  
+ 95D6   C606      add  a, 06h
+ 95D8   325382    ld   (08253h), a  
+ 95DB   C33A94    jp   Label26
+
+Label21:
+ 95DE   FDCB2156  bit  2, (iy+21h)
+ 95E2   C23A94    jp   nz, Label26
+ 95E5   3A5282    ld   a, (08252h)  
+ 95E8   F5        push af      
+ 95E9   CD1698    call Label27
+ 95EC   F1        pop  af      
+ 95ED   325282    ld   (08252h), a  
+ 95F0   CD1197    call Label28
+ 95F3   DA3A94    jp   c, Label26
+ 95F6   7E        ld   a, (hl) 
+ 95F7   FED6      cp   0D6h
+ 95F9   CA3696    jp   z, Label46
+ 95FC   FEFF      cp   0FFh
+ 95FE   CA0F96    jp   z, Label35
+ 9601   CD4298    call Label38
+ 9604   47        ld   b, a    
+ 9605   3A5282    ld   a, (08252h)  
+ 9608   90        sub  b       
+ 9609   325282    ld   (08252h), a  
+ 960C   C33A94    jp   Label26
+
+Label35:
+ 960F   2A9B85    ld   hl, (0859Bh) 
+ 9612   E5        push hl      
+ 9613   FD7E05    ld   a, (iy+05h)
+ 9616   F5        push af      
+
+Label48:
+ 9617   CD1197    call Label28
+ 961A   DA2596    jp   c, Label47
+ 961D   7E        ld   a, (hl) 
+ 961E   FEFF      cp   0FFh
+ 9620   20F5      jr   nz, Label48
+ 9622   CDD396    call Label36
+
+Label47:
+ 9625   CD8698    call Label18
+ 9628   F1        pop  af      
+ 9629   E1        pop  hl      
+ 962A   229B85    ld   (0859Bh), hl 
+ 962D   E5        push hl      
+ 962E   F5        push af      
+ 962F   AF        xor  a       
+ 9630   325282    ld   (08252h), a  
+ 9633   C34B96    jp   Label49
+
+Label46:
+ 9636   F1        pop  af      
+ 9637   3A5382    ld   a, (08253h)  
+ 963A   D606      sub  06h
+ 963C   325382    ld   (08253h), a  
+ 963F   2A9B85    ld   hl, (0859Bh) 
+ 9642   E5        push hl      
+ 9643   FD7E05    ld   a, (iy+05h)
+ 9646   F5        push af      
+ 9647   AF        xor  a       
+ 9648   325282    ld   (08252h), a  
+
+Label49:
+ 964B   CD1197    call Label28
+ 964E   DA6A96    jp   c, Label50
+ 9651   7E        ld   a, (hl) 
+ 9652   FED6      cp   0D6h
+ 9654   CA6A96    jp   z, Label50
+ 9657   FEFF      cp   0FFh
+ 9659   CA6A96    jp   z, Label50
+ 965C   CD4298    call Label38
+ 965F   47        ld   b, a    
+ 9660   3A5282    ld   a, (08252h)  
+ 9663   80        add  a, b    
+ 9664   325282    ld   (08252h), a  
+ 9667   C34B96    jp   Label49
+
+Label50:
+ 966A   F1        pop  af      
+ 966B   FD7705    ld   (iy+05h), a
+ 966E   E1        pop  hl      
+ 966F   229B85    ld   (0859Bh), hl 
+ 9672   C33A94    jp   Label26
+
+Label22:
+ 9675   FDCB2156  bit  2, (iy+21h)
+ 9679   C23A94    jp   nz, Label26
+ 967C   CDCD96    call Label51
+ 967F   DA3A94    jp   c, Label26
+ 9682   2A9B85    ld   hl, (0859Bh) 
+ 9685   7E        ld   a, (hl) 
+ 9686   FED6      cp   0D6h
+ 9688   2811      jr   z, Label52
+ 968A   FEFF      cp   0FFh
+ 968C   CABA96    jp   z, Label41
+ 968F   CD7D47    call _vputmap
+ 9692   CD9C4B    call _GRBUFCPY
+ 9695   CDD396    call Label36
+ 9698   C33A94    jp   Label26
+
+Label52:
+ 969B   3A5382    ld   a, (08253h)  
+ 969E   C606      add  a, 06h
+ 96A0   FE3C      cp   3Ch
+ 96A2   CA3A94    jp   z, Label26
+ 96A5   F5        push af      
+ 96A6   CD2A98    call Label53
+ 96A9   CD9C4B    call _GRBUFCPY
+ 96AC   F1        pop  af      
+ 96AD   325382    ld   (08253h), a  
+ 96B0   AF        xor  a       
+ 96B1   325282    ld   (08252h), a  
+ 96B4   CDD396    call Label36
+ 96B7   C33A94    jp   Label26
+
+Label41:
+ 96BA   CDD396    call Label36
+ 96BD   C33194    jp   Label54
+
+Label19:
+ 96C0   FD7E05    ld   a, (iy+05h)
+ 96C3   32A185    ld   (085A1h), a  
+ 96C6   FDCB059E  res  3, (iy+05h)
+ 96CA   C35393    jp   Label10
+
+Label51:
+ 96CD   FDCB23C6  set  0, (iy+23h)
+ 96D1   1804      jr   Label55
+
+Label36:
+ 96D3   FDCB2386  res  0, (iy+23h)
+
+Label55:
+ 96D7   2A9B85    ld   hl, (0859Bh) 
+ 96DA   229F85    ld   (0859Fh), hl 
+ 96DD   FD7E05    ld   a, (iy+05h)
+ 96E0   32A185    ld   (085A1h), a  
+
+Label73:
+ 96E3   CD5597    call Label56
+ 96E6   D8        ret  c       
+ 96E7   7E        ld   a, (hl) 
+ 96E8   FEF9      cp   0F9h
+ 96EA   CA7D97    jp   z, Label57
+ 96ED   FEFA      cp   0FAh
+ 96EF   CA8297    jp   z, Label58
+ 96F2   FEFB      cp   0FBh
+ 96F4   CA9D97    jp   z, Label59
+ 96F7   FEFC      cp   0FCh
+ 96F9   CAE697    jp   z, Label60
+ 96FC   FEFD      cp   0FDh
+ 96FE   CA0098    jp   z, Label61
+ 9701   FDCB2346  bit  0, (iy+23h)
+ 9705   C28E9D    jp   nz, Label62
+ 9708   C34697    jp   Label63
+ 970B   FDCB23C6  set  0, (iy+23h)
+ 970F   1804      jr   Label64
+
+Label28:
+ 9711   FDCB2386  res  0, (iy+23h)
+
+Label64:
+ 9715   2A9B85    ld   hl, (0859Bh) 
+ 9718   229F85    ld   (0859Fh), hl 
+ 971B   FD7E05    ld   a, (iy+05h)
+ 971E   32A185    ld   (085A1h), a  
+
+Label75:
+ 9721   CD6997    call Label65
+ 9724   D8        ret  c       
+ 9725   7E        ld   a, (hl) 
+ 9726   FEF9      cp   0F9h
+ 9728   CA8D97    jp   z, Label66
+ 972B   FEFA      cp   0FAh
+ 972D   CA9297    jp   z, Label67
+ 9730   FEFB      cp   0FBh
+ 9732   CAC897    jp   z, Label68
+ 9735   FEFC      cp   0FCh
+ 9737   CAF397    jp   z, Label69
+ 973A   FEFD      cp   0FDh
+ 973C   CA0B98    jp   z, Label70
+ 973F   FDCB2346  bit  0, (iy+23h)
+ 9743   C28E9D    jp   nz, Label62
+
+Label63:
+ 9746   2A9F85    ld   hl, (0859Fh) 
+ 9749   229B85    ld   (0859Bh), hl 
+ 974C   3AA185    ld   a, (085A1h)  
+ 974F   FD7705    ld   (iy+05h), a
+ 9752   C38E9D    jp   Label62
+
+Label56:
+ 9755   2A9680    ld   hl, (08096h) 
+ 9758   EB        ex   de, hl  
+ 9759   2A9F85    ld   hl, (0859Fh) 
+ 975C   23        inc  hl      
+ 975D   CD0440    call _cphlde
+ 9760   CA3D98    jp   z, Label71
+ 9763   229F85    ld   (0859Fh), hl 
+ 9766   C38E9D    jp   Label62
+
+Label65:
+ 9769   2A9480    ld   hl, (08094h) 
+ 976C   EB        ex   de, hl  
+ 976D   2A9F85    ld   hl, (0859Fh) 
+ 9770   2B        dec  hl      
+ 9771   CD0440    call _cphlde
+ 9774   CA3D98    jp   z, Label71
+ 9777   229F85    ld   (0859Fh), hl 
+ 977A   C38E9D    jp   Label62
+
+Label57:
+ 977D   0603      ld   b, 03h
+ 977F   C38497    jp   Label72
+
+Label58:
+ 9782   0605      ld   b, 05h
+
+Label72:
+ 9784   CD5597    call Label56
+ 9787   D8        ret  c       
+ 9788   10FA      djnz Label72
+ 978A   C3E396    jp   Label73
+
+Label66:
+ 978D   0603      ld   b, 03h
+ 978F   C39497    jp   Label74
+
+Label67:
+ 9792   0605      ld   b, 05h
+
+Label74:
+ 9794   CD6997    call Label65
+ 9797   D8        ret  c       
+ 9798   10FA      djnz Label74
+ 979A   C32197    jp   Label75
+
+Label59:
+ 979D   CD7D97    call Label57
+ 97A0   D8        ret  c       
+ 97A1   7E        ld   a, (hl) 
+ 97A2   6F        ld   l, a    
+ 97A3   2600      ld   h, 00h
+ 97A5   3E08      ld   a, 08h
+ 97A7   CD0C40    call _divHLbyA
+ 97AA   E5        push hl      
+ 97AB   CD5597    call Label56
+ 97AE   D8        ret  c       
+ 97AF   7E        ld   a, (hl) 
+ 97B0   E1        pop  hl      
+ 97B1   67        ld   h, a    
+ 97B2   CD8243    call _HTIMESL
+ 97B5   110000    ld   de, __bank_ret
+
+Label76:
+ 97B8   D9        exx          
+ 97B9   CD5597    call Label56
+ 97BC   D8        ret  c       
+ 97BD   D9        exx          
+ 97BE   2B        dec  hl      
+ 97BF   CD0440    call _cphlde
+ 97C2   C2B897    jp   nz, Label76
+ 97C5   C37D97    jp   Label57
+
+Label68:
+ 97C8   CD6997    call Label65
+ 97CB   D8        ret  c       
+ 97CC   7E        ld   a, (hl) 
+ 97CD   4F        ld   c, a    
+ 97CE   CD6997    call Label65
+ 97D1   D8        ret  c       
+ 97D2   7E        ld   a, (hl) 
+ 97D3   47        ld   b, a    
+
+Label77:
+ 97D4   CD6997    call Label65
+ 97D7   D8        ret  c       
+ 97D8   0B        dec  bc      
+ 97D9   50        ld   d, b    
+ 97DA   59        ld   e, c    
+ 97DB   210000    ld   hl, __bank_ret
+ 97DE   CD0440    call _cphlde
+ 97E1   20F1      jr   nz, Label77
+ 97E3   C39297    jp   Label67
+
+Label60:
+ 97E6   CD5597    call Label56
+ 97E9   D8        ret  c       
+ 97EA   7E        ld   a, (hl) 
+ 97EB   FEFC      cp   0FCh
+ 97ED   C2E697    jp   nz, Label60
+ 97F0   C3E396    jp   Label73
+
+Label69:
+ 97F3   CD6997    call Label65
+ 97F6   D8        ret  c       
+ 97F7   7E        ld   a, (hl) 
+ 97F8   FEFC      cp   0FCh
+ 97FA   C2F397    jp   nz, Label69
+ 97FD   C32197    jp   Label75
+
+Label61:
+ 9800   3AA185    ld   a, (085A1h)  
+ 9803   EE08      xor  08h
+ 9805   32A185    ld   (085A1h), a  
+ 9808   C3E396    jp   Label73
+
+Label70:
+ 980B   3AA185    ld   a, (085A1h)  
+ 980E   EE08      xor  08h
+ 9810   32A185    ld   (085A1h), a  
+ 9813   C32197    jp   Label75
+
+Label27:
+ 9816   2A9B85    ld   hl, (0859Bh) 
+ 9819   7E        ld   a, (hl) 
+ 981A   FED6      cp   0D6h
+ 981C   CA2A98    jp   z, Label53
+ 981F   FEFF      cp   0FFh
+ 9821   CA2A98    jp   z, Label53
+ 9824   CD7D47    call _vputmap
+ 9827   C33998    jp   Label78
+
+Label53:
+ 982A   FD7E05    ld   a, (iy+05h)
+ 982D   F5        push af      
+ 982E   FDCB059E  res  3, (iy+05h)
+ 9832   CD534C    call _VPUTBLANK
+ 9835   F1        pop  af      
+ 9836   FD7705    ld   (iy+05h), a
+
+Label78:
+ 9839   CD9C4B    call _GRBUFCPY
+ 983C   C9        ret          
+
+Label71:
+ 983D   37        scf          
+ 983E   2A9B85    ld   hl, (0859Bh) 
+ 9841   C9        ret          
+
+Label38:
+ 9842   D9        exx          
+ 9843   6F        ld   l, a    
+ 9844   2608      ld   h, 08h
+ 9846   CD8243    call _HTIMESL
+ 9849   CD6C4A    call _SFONT_LEN
+ 984C   78        ld   a, b    
+ 984D   D9        exx          
+ 984E   C9        ret          
+
+Label17:
+ 984F   FDCB2196  res  2, (iy+21h)
+ 9853   FDCB21CE  set  1, (iy+21h)
+ 9857   FDCB21C6  set  0, (iy+21h)
+ 985B   CD2A44    call _CHKFINDSYM
+ 985E   1A        ld   a, (de) 
+ 985F   6F        ld   l, a    
+ 9860   13        inc  de      
+ 9861   1A        ld   a, (de) 
+ 9862   67        ld   h, a    
+ 9863   D5        push de      
+ 9864   110300    ld   de, 0003h
+ 9867   CD0440    call _cphlde
+ 986A   CC9E94    call z, Label79
+ 986D   D1        pop  de      
+ 986E   0603      ld   b, 03h
+
+Label80:
+ 9870   13        inc  de      
+ 9871   10FD      djnz Label80
+ 9873   1A        ld   a, (de) 
+ 9874   FD7722    ld   (iy+22h), a
+ 9877   AF        xor  a       
+ 9878   CD024E    call _EDITPROG
+ 987B   2A9480    ld   hl, (08094h) 
+ 987E   229B85    ld   (0859Bh), hl 
+ 9881   EB        ex   de, hl  
+ 9882   CDD396    call Label36
+ 9885   C9        ret          
+
+Label18:
+ 9886   210000    ld   hl, __bank_ret
+ 9889   225282    ld   (08252h), hl 
+ 988C   CD5B51    call _GRBUFCLR
+ 988F   2A9B85    ld   hl, (0859Bh) 
+ 9892   229D85    ld   (0859Dh), hl 
+ 9895   2B        dec  hl      
+ 9896   229B85    ld   (0859Bh), hl 
+ 9899   FD7E05    ld   a, (iy+05h)
+ 989C   32A285    ld   (085A2h), a  
+
+Label83:
+ 989F   CDD396    call Label36
+ 98A2   DACA98    jp   c, Label81
+ 98A5   7E        ld   a, (hl) 
+ 98A6   FED6      cp   0D6h
+ 98A8   CAB698    jp   z, Label82
+ 98AB   FEFF      cp   0FFh
+ 98AD   CACA98    jp   z, Label81
+ 98B0   CD7D47    call _vputmap
+ 98B3   C39F98    jp   Label83
+
+Label82:
+ 98B6   3A5382    ld   a, (08253h)  
+ 98B9   C606      add  a, 06h
+ 98BB   FE3C      cp   3Ch
+ 98BD   CACA98    jp   z, Label81
+ 98C0   325382    ld   (08253h), a  
+ 98C3   AF        xor  a       
+ 98C4   325282    ld   (08252h), a  
+ 98C7   C39F98    jp   Label83
+
+Label81:
+ 98CA   CD9C4B    call _GRBUFCPY
+ 98CD   2A9D85    ld   hl, (0859Dh) 
+ 98D0   229B85    ld   (0859Bh), hl 
+ 98D3   3AA285    ld   a, (085A2h)  
+ 98D6   FD7705    ld   (iy+05h), a
+ 98D9   C9        ret          
+
+Label15:
+ 98DA   CD9E41    call _OP5TOOP1
+ 98DD   CD579D    call Label84
+ 98E0   DA1494    jp   c, Label13
+ 98E3   C3DE93    jp   Label85
+
+Label16:
+ 98E6   CD9E41    call _OP5TOOP1
+ 98E9   CD4B9D    call Label11
+ 98EC   DA1494    jp   c, Label13
+ 98EF   C3DE93    jp   Label85
+
+Label12:
+ 98F2   CD5547    call _CLRLCDFULL
+ 98F5   210100    ld   hl, 0001h
+ 98F8   220C80    ld   (0800Ch), hl 
+ 98FB   21959F    ld   hl, Str6
+ 98FE   CD0D47    call _puts
+ 9901   CD969D    call Label3
+ 9904   C35393    jp   Label10
+
+Label5:
+ 9907   FDCB214E  bit  1, (iy+21h)
+ 990B   CC3E99    call z, Label9
+ 990E   DA5393    jp   c, Label10
+ 9911   FDCB2146  bit  0, (iy+21h)
+ 9915   C4064E    call nz, _CLOSEPROG
+ 9918   CD8E42    call _ZEROOP1
+ 991B   AF        xor  a       
+ 991C   FD7722    ld   (iy+22h), a
+ 991F   CDBA99    call Label86
+ 9922   210300    ld   hl, 0003h
+ 9925   CD8A44    call _CREATEPROG
+ 9928   3606      ld   (hl), 06h
+ 992A   13        inc  de      
+ 992B   13        inc  de      
+ 992C   3ED9      ld   a, 0D9h
+ 992E   12        ld   (de), a 
+ 992F   13        inc  de      
+ 9930   3E3F      ld   a, 3Fh
+ 9932   12        ld   (de), a 
+ 9933   13        inc  de      
+ 9934   FD7E22    ld   a, (iy+22h)
+ 9937   12        ld   (de), a 
+ 9938   CD9A41    call _OP4TOOP1
+ 993B   C32E94    jp   Label87
+
+Label9:
+ 993E   CD5D47    call _clrScrnFull
+ 9941   210000    ld   hl, __bank_ret
+ 9944   220C80    ld   (0800Ch), hl 
+ 9947   21649F    ld   hl, Str7
+ 994A   CD0D47    call _puts
+ 994D   FDCB12E6  set  4, (iy+12h)
+ 9951   FDCB12FE  set  7, (iy+12h)
+ 9955   CD969D    call Label3
+ 9958   FE2C      cp   2Ch
+ 995A   CAB099    jp   z, Label88
+ 995D   FE25      cp   25h
+ 995F   CA6999    jp   z, Label89
+ 9962   FE22      cp   22h
+ 9964   CA6999    jp   z, Label89
+ 9967   37        scf          
+ 9968   C9        ret          
+
+Label89:
+ 9969   CD064E    call _CLOSEPROG
+ 996C   FDCB2186  res  0, (iy+21h)
+ 9970   C38E9D    jp   Label62
+
+Label8:
+ 9973   CD064E    call _CLOSEPROG
+ 9976   CD2A44    call _CHKFINDSYM
+ 9979   1A        ld   a, (de) 
+ 997A   6F        ld   l, a    
+ 997B   13        inc  de      
+ 997C   1A        ld   a, (de) 
+ 997D   67        ld   h, a    
+ 997E   13        inc  de      
+ 997F   D5        push de      
+ 9980   E5        push hl      
+ 9981   CDBA99    call Label86
+ 9984   E1        pop  hl      
+ 9985   E5        push hl      
+ 9986   CD8A44    call _CREATEPROG
+ 9989   D9        exx          
+ 998A   CD9A41    call _OP4TOOP1
+ 998D   D9        exx          
+ 998E   3606      ld   (hl), 06h
+ 9990   13        inc  de      
+ 9991   13        inc  de      
+ 9992   C1        pop  bc      
+ 9993   E1        pop  hl      
+ 9994   EDB0      ldir         
+ 9996   CD4F98    call Label17
+ 9999   FDCB059E  res  3, (iy+05h)
+ 999D   FD7E05    ld   a, (iy+05h)
+ 99A0   32A185    ld   (085A1h), a  
+ 99A3   C35393    jp   Label10
+
+Label90:
+ 99A6   13        inc  de      
+ 99A7   10FD      djnz Label90
+ 99A9   AF        xor  a       
+ 99AA   CD024E    call _EDITPROG
+ 99AD   C35393    jp   Label10
+
+Label88:
+ 99B0   CD2B4C    call _closeEditBuf
+ 99B3   FDCB2186  res  0, (iy+21h)
+ 99B7   C38E9D    jp   Label62
+
+Label86:
+ 99BA   CDF79C    call Label91
+ 99BD   CD5D47    call _clrScrnFull
+ 99C0   210001    ld   hl, 00100h
+ 99C3   220C80    ld   (0800Ch), hl 
+ 99C6   21EB9E    ld   hl, Str8
+ 99C9   CD0D47    call _puts
+ 99CC   210201    ld   hl, 00102h
+ 99CF   220C80    ld   (0800Ch), hl 
+ 99D2   21F99E    ld   hl, Str9
+ 99D5   CD0D47    call _puts
+ 99D8   210302    ld   hl, 00203h
+ 99DB   220C80    ld   (0800Ch), hl 
+ 99DE   21FF9E    ld   hl, Str10
+ 99E1   CD0D47    call _puts
+ 99E4   210402    ld   hl, 00204h
+ 99E7   220C80    ld   (0800Ch), hl 
+ 99EA   21089F    ld   hl, Str11
+ 99ED   CD0D47    call _puts
+ 99F0   210502    ld   hl, 00205h
+ 99F3   220C80    ld   (0800Ch), hl 
+ 99F6   21149F    ld   hl, Str12
+ 99F9   CD0D47    call _puts
+ 99FC   210602    ld   hl, 00206h
+ 99FF   220C80    ld   (0800Ch), hl 
+ 9A02   211F9F    ld   hl, Str13
+ 9A05   CD0D47    call _puts
+ 9A08   210701    ld   hl, 00107h
+ 9A0B   220C80    ld   (0800Ch), hl 
+ 9A0E   21269F    ld   hl, Str14
+ 9A11   CD0D47    call _puts
+ 9A14   3E02      ld   a, 02h
+ 9A16   329185    ld   (08591h), a  
+ 9A19   210200    ld   hl, 0002h
+ 9A1C   220C80    ld   (0800Ch), hl 
+ 9A1F   3E05      ld   a, 05h
+ 9A21   CD0547    call _putc
+ 9A24   FDCB227E  bit  7, (iy+22h)
+ 9A28   C4DB9C    call nz, Label92
+ 9A2B   FDCB2276  bit  6, (iy+22h)
+ 9A2F   C4E09C    call nz, Label93
+ 9A32   FDCB226E  bit  5, (iy+22h)
+ 9A36   C4E59C    call nz, Label94
+ 9A39   FDCB2266  bit  4, (iy+22h)
+ 9A3D   C4EA9C    call nz, Label95
+
+Label99:
+ 9A40   3A9185    ld   a, (08591h)  
+ 9A43   FE02      cp   02h
+ 9A45   CA3F9B    jp   z, Label96
+ 9A48   CD969D    call Label3
+ 9A4B   FE04      cp   04h
+ 9A4D   CAEE9A    jp   z, Label97
+ 9A50   FE01      cp   01h
+ 9A52   CA0E9B    jp   z, Label98
+ 9A55   FE09      cp   09h
+ 9A57   C2409A    jp   nz, Label99
+ 9A5A   3A9185    ld   a, (08591h)  
+ 9A5D   FE03      cp   03h
+ 9A5F   CAAE9A    jp   z, Label100
+ 9A62   FE04      cp   04h
+ 9A64   CAB39A    jp   z, Label101
+ 9A67   FE05      cp   05h
+ 9A69   CAB89A    jp   z, Label102
+ 9A6C   FE06      cp   06h
+ 9A6E   CABD9A    jp   z, Label103
+ 9A71   FE07      cp   07h
+ 9A73   C2409A    jp   nz, Label99
+ 9A76   3A7D91    ld   a, (0917Dh)  
+ 9A79   FE20      cp   20h
+ 9A7B   CA409A    jp   z, Label99
+ 9A7E   3E06      ld   a, 06h
+ 9A80   323980    ld   (08039h), a  
+ 9A83   CD2A44    call _CHKFINDSYM
+ 9A86   D48A9A    call nc, Label104
+ 9A89   C9        ret          
+
+Label104:
+ 9A8A   CD5D47    call _clrScrnFull
+ 9A8D   210000    ld   hl, __bank_ret
+ 9A90   220C80    ld   (0800Ch), hl 
+ 9A93   212E9F    ld   hl, Str15
+ 9A96   CD0D47    call _puts
+ 9A99   FDCB12E6  set  4, (iy+12h)
+ 9A9D   FDCB12FE  set  7, (iy+12h)
+ 9AA1   CD969D    call Label3
+ 9AA4   FE25      cp   25h
+ 9AA6   C8        ret  z       
+ 9AA7   FE22      cp   22h
+ 9AA9   C8        ret  z       
+ 9AAA   E1        pop  hl      
+ 9AAB   C3BA99    jp   Label86
+
+Label100:
+ 9AAE   0680      ld   b, 80h
+ 9AB0   C3BF9A    jp   Label105
+
+Label101:
+ 9AB3   0640      ld   b, 40h
+ 9AB5   C3BF9A    jp   Label105
+
+Label102:
+ 9AB8   0620      ld   b, 20h
+ 9ABA   C3BF9A    jp   Label105
+
+Label103:
+ 9ABD   0608      ld   b, 08h
+
+Label105:
+ 9ABF   F5        push af      
+ 9AC0   FD7E22    ld   a, (iy+22h)
+ 9AC3   A8        xor  b       
+ 9AC4   FD7722    ld   (iy+22h), a
+ 9AC7   F1        pop  af      
+ 9AC8   47        ld   b, a    
+ 9AC9   21CA80    ld   hl, 080CAh
+
+Label107:
+ 9ACC   C5        push bc      
+ 9ACD   0610      ld   b, 10h
+
+Label106:
+ 9ACF   23        inc  hl      
+ 9AD0   10FD      djnz Label106
+ 9AD2   C1        pop  bc      
+ 9AD3   10F7      djnz Label107
+ 9AD5   7E        ld   a, (hl) 
+ 9AD6   FE20      cp   20h
+ 9AD8   CAE09A    jp   z, Label108
+ 9ADB   FEFF      cp   0FFh
+ 9ADD   CAE59A    jp   z, Label109
+
+Label108:
+ 9AE0   3EFF      ld   a, 0FFh
+ 9AE2   C3E79A    jp   Label110
+
+Label109:
+ 9AE5   3E20      ld   a, 20h
+
+Label110:
+ 9AE7   77        ld   (hl), a 
+ 9AE8   CDA147    call _RSTRSHADOW
+ 9AEB   C3409A    jp   Label99
+
+Label97:
+ 9AEE   3A9185    ld   a, (08591h)  
+ 9AF1   6F        ld   l, a    
+ 9AF2   2600      ld   h, 00h
+ 9AF4   220C80    ld   (0800Ch), hl 
+ 9AF7   3E20      ld   a, 20h
+ 9AF9   CD0147    call _putmap
+ 9AFC   3A9185    ld   a, (08591h)  
+ 9AFF   3D        dec  a       
+ 9B00   329185    ld   (08591h), a  
+ 9B03   320C80    ld   (0800Ch), a  
+ 9B06   3E05      ld   a, 05h
+ 9B08   CD0147    call _putmap
+ 9B0B   C3409A    jp   Label99
+
+Label98:
+ 9B0E   3A9185    ld   a, (08591h)  
+ 9B11   FE07      cp   07h
+ 9B13   CA409A    jp   z, Label99
+ 9B16   6F        ld   l, a    
+ 9B17   2600      ld   h, 00h
+ 9B19   220C80    ld   (0800Ch), hl 
+ 9B1C   3E20      ld   a, 20h
+ 9B1E   CD0147    call _putmap
+ 9B21   3A9185    ld   a, (08591h)  
+ 9B24   3C        inc  a       
+ 9B25   329185    ld   (08591h), a  
+ 9B28   320C80    ld   (0800Ch), a  
+ 9B2B   3E05      ld   a, 05h
+ 9B2D   CD0147    call _putmap
+ 9B30   C3409A    jp   Label99
+
+Label118:
+ 9B33   3EE6      ld   a, 0E6h
+ 9B35   C3879B    jp   Label111
+
+Label117:
+ 9B38   FDCB238E  res  1, (iy+23h)
+ 9B3C   C3689B    jp   Label112
+
+Label96:
+ 9B3F   CD9947    call _saveCmdShadow
+ 9B42   CDF79C    call Label91
+ 9B45   CD269D    call Label113
+
+Label136:
+ 9B48   217D91    ld   hl, 0917Dh
+ 9B4B   0608      ld   b, 08h
+
+Label116:
+ 9B4D   7E        ld   a, (hl) 
+ 9B4E   23        inc  hl      
+ 9B4F   C6A5      add  a, 0A5h
+ 9B51   DA5E9B    jp   c, Label114
+ 9B54   D6E6      sub  0E6h
+ 9B56   C641      add  a, 41h
+ 9B58   DA5E9B    jp   c, Label114
+ 9B5B   C3649B    jp   Label115
+
+Label114:
+ 9B5E   10ED      djnz Label116
+ 9B60   E1        pop  hl      
+ 9B61   C3389B    jp   Label117
+
+Label115:
+ 9B64   FDCB23CE  set  1, (iy+23h)
+
+Label112:
+ 9B68   217D91    ld   hl, 0917Dh
+ 9B6B   11EF80    ld   de, 080EFh
+ 9B6E   010800    ld   bc, 0008h
+ 9B71   EDB0      ldir         
+ 9B73   2A0C80    ld   hl, (0800Ch) 
+ 9B76   E5        push hl      
+ 9B77   CDA147    call _RSTRSHADOW
+ 9B7A   E1        pop  hl      
+ 9B7B   220C80    ld   (0800Ch), hl 
+ 9B7E   FDCB1266  bit  4, (iy+12h)
+ 9B82   C2339B    jp   nz, Label118
+
+Label132:
+ 9B85   3EE4      ld   a, 0E4h
+
+Label111:
+ 9B87   CD0147    call _putmap
+
+Label125:
+ 9B8A   CD429E    call Label119
+ 9B8D   FEFD      cp   0FDh
+ 9B8F   CAB79C    jp   z, Label120
+ 9B92   FEFE      cp   0FEh
+ 9B94   CAA39C    jp   z, Label121
+ 9B97   CD6A9E    call Label122
+ 9B9A   FE7F      cp   7Fh
+ 9B9C   CAF19B    jp   z, Label123
+ 9B9F   FDCB1266  bit  4, (iy+12h)
+ 9BA3   C2039C    jp   nz, Label124
+ 9BA6   FDCB234E  bit  1, (iy+23h)
+ 9BAA   CA8A9B    jp   z, Label125
+ 9BAD   2602      ld   h, 02h
+ 9BAF   CD529E    call Label126
+ 9BB2   FEFF      cp   0FFh
+ 9BB4   C2CB9B    jp   nz, Label127
+ 9BB7   2601      ld   h, 01h
+ 9BB9   CD5A9E    call Label128
+ 9BBC   FEFF      cp   0FFh
+ 9BBE   C2CB9B    jp   nz, Label127
+ 9BC1   2600      ld   h, 00h
+ 9BC3   CD629E    call Label129
+ 9BC6   FEFF      cp   0FFh
+ 9BC8   CA8A9B    jp   z, Label125
+
+Label127:
+ 9BCB   2E37      ld   l, 37h
+ 9BCD   FEF7      cp   0F7h
+ 9BCF   CAEC9B    jp   z, Label130
+ 9BD2   2E34      ld   l, 34h
+ 9BD4   FEFB      cp   0FBh
+ 9BD6   CAEC9B    jp   z, Label130
+ 9BD9   2E31      ld   l, 31h
+ 9BDB   FEFD      cp   0FDh
+ 9BDD   CAEC9B    jp   z, Label130
+ 9BE0   2E30      ld   l, 30h
+ 9BE2   FEFE      cp   0FEh
+ 9BE4   C28A9B    jp   nz, Label125
+ 9BE7   7C        ld   a, h    
+ 9BE8   A7        and  a       
+ 9BE9   C28A9B    jp   nz, Label125
+
+Label130:
+ 9BEC   7C        ld   a, h    
+ 9BED   85        add  a, l    
+ 9BEE   C3789C    jp   Label131
+
+Label123:
+ 9BF1   FD7E12    ld   a, (iy+12h)
+ 9BF4   EE10      xor  10h
+ 9BF6   FD7712    ld   (iy+12h), a
+ 9BF9   FDCB1266  bit  4, (iy+12h)
+ 9BFD   C2339B    jp   nz, Label118
+ 9C00   C3859B    jp   Label132
+
+Label124:
+ 9C03   2604      ld   h, 04h
+ 9C05   CD4A9E    call Label133
+ 9C08   FEFF      cp   0FFh
+ 9C0A   C2359C    jp   nz, Label134
+ 9C0D   2603      ld   h, 03h
+ 9C0F   CD529E    call Label126
+ 9C12   FEFF      cp   0FFh
+ 9C14   C2359C    jp   nz, Label134
+ 9C17   2602      ld   h, 02h
+ 9C19   CD5A9E    call Label128
+ 9C1C   FEFF      cp   0FFh
+ 9C1E   C2359C    jp   nz, Label134
+ 9C21   2601      ld   h, 01h
+ 9C23   CD629E    call Label129
+ 9C26   FEFF      cp   0FFh
+ 9C28   C2359C    jp   nz, Label134
+ 9C2B   2600      ld   h, 00h
+ 9C2D   CD6A9E    call Label122
+ 9C30   FEFF      cp   0FFh
+ 9C32   CA8A9B    jp   z, Label125
+
+Label134:
+ 9C35   2E41      ld   l, 41h
+ 9C37   FEBF      cp   0BFh
+ 9C39   CA5F9C    jp   z, Label135
+ 9C3C   2E44      ld   l, 44h
+ 9C3E   FEDF      cp   0DFh
+ 9C40   CA5F9C    jp   z, Label135
+ 9C43   2E49      ld   l, 49h
+ 9C45   FEEF      cp   0EFh
+ 9C47   CA5F9C    jp   z, Label135
+ 9C4A   2E4E      ld   l, 4Eh
+ 9C4C   FEF7      cp   0F7h
+ 9C4E   CA5F9C    jp   z, Label135
+ 9C51   2E53      ld   l, 53h
+ 9C53   FEFB      cp   0FBh
+ 9C55   CA5F9C    jp   z, Label135
+ 9C58   2E58      ld   l, 58h
+ 9C5A   FEFD      cp   0FDh
+ 9C5C   C28A9B    jp   nz, Label125
+
+Label135:
+ 9C5F   114103    ld   de, 00341h
+ 9C62   CD0440    call _cphlde
+ 9C65   CA8A9B    jp   z, Label125
+ 9C68   114104    ld   de, 00441h
+ 9C6B   CD0440    call _cphlde
+ 9C6E   CA8A9B    jp   z, Label125
+ 9C71   7C        ld   a, h    
+ 9C72   85        add  a, l    
+ 9C73   FE5C      cp   5Ch
+ 9C75   CA8A9B    jp   z, Label125
+
+Label131:
+ 9C78   47        ld   b, a    
+ 9C79   217791    ld   hl, 09177h
+ 9C7C   3A0D80    ld   a, (0800Dh)  
+ 9C7F   FE0E      cp   0Eh
+ 9C81   CA489B    jp   z, Label136
+ 9C84   85        add  a, l    
+ 9C85   6F        ld   l, a    
+ 9C86   70        ld   (hl), b 
+ 9C87   3A0D80    ld   a, (0800Dh)  
+ 9C8A   FE0D      cp   0Dh
+ 9C8C   C4959C    call nz, Label137
+ 9C8F   CC9A9C    call z, Label138
+ 9C92   C3489B    jp   Label136
+
+Label137:
+ 9C95   3C        inc  a       
+ 9C96   320D80    ld   (0800Dh), a  
+ 9C99   C9        ret          
+
+Label138:
+ 9C9A   CD959C    call Label137
+ 9C9D   3EF1      ld   a, 0F1h
+ 9C9F   CD0147    call _putmap
+ 9CA2   C9        ret          
+
+Label121:
+ 9CA3   217D91    ld   hl, 0917Dh
+ 9CA6   11EF80    ld   de, 080EFh
+ 9CA9   010900    ld   bc, 0009h
+ 9CAC   EDB0      ldir         
+ 9CAE   CDA147    call _RSTRSHADOW
+ 9CB1   CD0D9D    call Label139
+ 9CB4   C30E9B    jp   Label98
+
+Label120:
+ 9CB7   3A0D80    ld   a, (0800Dh)  
+ 9CBA   FE06      cp   06h
+ 9CBC   CA489B    jp   z, Label136
+ 9CBF   FE0E      cp   0Eh
+ 9CC1   CCD59C    call z, Label140
+ 9CC4   3A0D80    ld   a, (0800Dh)  
+ 9CC7   3D        dec  a       
+ 9CC8   320D80    ld   (0800Dh), a  
+ 9CCB   217791    ld   hl, 09177h
+ 9CCE   85        add  a, l    
+ 9CCF   6F        ld   l, a    
+ 9CD0   3620      ld   (hl), 20h
+ 9CD2   C3489B    jp   Label136
+
+Label140:
+ 9CD5   3E20      ld   a, 20h
+ 9CD7   CD0147    call _putmap
+ 9CDA   C9        ret          
+
+Label92:
+ 9CDB   2E03      ld   l, 03h
+ 9CDD   C3EC9C    jp   Label141
+
+Label93:
+ 9CE0   2E04      ld   l, 04h
+ 9CE2   C3EC9C    jp   Label141
+
+Label94:
+ 9CE5   2E05      ld   l, 05h
+ 9CE7   C3EC9C    jp   Label141
+
+Label95:
+ 9CEA   2E06      ld   l, 06h
+
+Label141:
+ 9CEC   2601      ld   h, 01h
+ 9CEE   220C80    ld   (0800Ch), hl 
+ 9CF1   3EFF      ld   a, 0FFh
+ 9CF3   CD0547    call _putc
+ 9CF6   C9        ret          
+
+Label91:
+ 9CF7   213980    ld   hl, 08039h
+ 9CFA   117C91    ld   de, 0917Ch
+ 9CFD   0608      ld   b, 08h
+
+Label143:
+ 9CFF   23        inc  hl      
+ 9D00   13        inc  de      
+ 9D01   7E        ld   a, (hl) 
+ 9D02   A7        and  a       
+ 9D03   CC0A9D    call z, Label142
+ 9D06   12        ld   (de), a 
+ 9D07   10F6      djnz Label143
+ 9D09   C9        ret          
+
+Label142:
+ 9D0A   3E20      ld   a, 20h
+ 9D0C   C9        ret          
+
+Label139:
+ 9D0D   CD8E42    call _ZEROOP1
+ 9D10   217C91    ld   hl, 0917Ch
+ 9D13   113980    ld   de, 08039h
+ 9D16   0608      ld   b, 08h
+
+Label145:
+ 9D18   23        inc  hl      
+ 9D19   13        inc  de      
+ 9D1A   7E        ld   a, (hl) 
+ 9D1B   FE20      cp   20h
+ 9D1D   CC249D    call z, Label144
+ 9D20   12        ld   (de), a 
+ 9D21   10F5      djnz Label145
+ 9D23   C9        ret          
+
+Label144:
+ 9D24   AF        xor  a       
+ 9D25   C9        ret          
+
+Label113:
+ 9D26   217C91    ld   hl, 0917Ch
+ 9D29   0608      ld   b, 08h
+ 9D2B   0E05      ld   c, 05h
+
+Label147:
+ 9D2D   23        inc  hl      
+ 9D2E   0C        inc  c       
+ 9D2F   7E        ld   a, (hl) 
+ 9D30   FE20      cp   20h
+ 9D32   CA449D    jp   z, Label146
+ 9D35   10F6      djnz Label147
+ 9D37   0C        inc  c       
+ 9D38   61        ld   h, c    
+ 9D39   2E02      ld   l, 02h
+ 9D3B   220C80    ld   (0800Ch), hl 
+ 9D3E   3EF1      ld   a, 0F1h
+ 9D40   CD0147    call _putmap
+ 9D43   C9        ret          
+
+Label146:
+ 9D44   61        ld   h, c    
+ 9D45   2E02      ld   l, 02h
+ 9D47   220C80    ld   (0800Ch), hl 
+ 9D4A   C9        ret          
+
+Label11:
+ 9D4B   CDBA41    call _OP1TOOP6
+ 9D4E   CD1A4E    call _FindAlphaup
+ 9D51   014B9D    ld   bc, Str11
+ 9D54   C3609D    jp   Label148
+
+Label84:
+ 9D57   CDBA41    call _OP1TOOP6
+ 9D5A   CD1E4E    call _FindAlphadn
+ 9D5D   01579D    ld   bc, Str84
+
+Label148:
+ 9D60   D9        exx          
+ 9D61   08        ex   af, af' 
+ 9D62   060B      ld   b, 0Bh
+ 9D64   213880    ld   hl, 08038h
+ 9D67   116F80    ld   de, 0806Fh
+
+Label150:
+ 9D6A   23        inc  hl      
+ 9D6B   13        inc  de      
+ 9D6C   7E        ld   a, (hl) 
+ 9D6D   EB        ex   de, hl  
+ 9D6E   4E        ld   c, (hl) 
+ 9D6F   EB        ex   de, hl  
+ 9D70   B9        cp   c       
+ 9D71   2004      jr   nz, Label149
+ 9D73   10F5      djnz Label150
+ 9D75   37        scf          
+ 9D76   C9        ret          
+
+Label149:
+ 9D77   D9        exx          
+ 9D78   08        ex   af, af' 
+ 9D79   2B        dec  hl      
+ 9D7A   5E        ld   e, (hl) 
+ 9D7B   2B        dec  hl      
+ 9D7C   56        ld   d, (hl) 
+ 9D7D   2B        dec  hl      
+ 9D7E   EB        ex   de, hl  
+ 9D7F   23        inc  hl      
+ 9D80   23        inc  hl      
+ 9D81   7E        ld   a, (hl) 
+ 9D82   FED9      cp   0D9h
+ 9D84   C2949D    jp   nz, Label151
+ 9D87   23        inc  hl      
+ 9D88   7E        ld   a, (hl) 
+ 9D89   FE3F      cp   3Fh
+ 9D8B   C2949D    jp   nz, Label151
+
+Label62:
+ 9D8E   110000    ld   de, __bank_ret
+ 9D91   D5        push de      
+ 9D92   F1        pop  af      
+ 9D93   C9        ret          
+
+Label151:
+ 9D94   C5        push bc      
+ 9D95   C9        ret          
+
+Label3:
+ 9D96   FDCB127E  bit  7, (iy+12h)
+ 9D9A   C2D79D    jp   nz, Label152
+ 9D9D   FDCB1276  bit  6, (iy+12h)
+ 9DA1   C2D79D    jp   nz, Label152
+ 9DA4   FDCB125E  bit  3, (iy+12h)
+ 9DA8   C2DC9D    jp   nz, Label153
+ 9DAB   FDCB1266  bit  4, (iy+12h)
+ 9DAF   C2D79D    jp   nz, Label152
+ 9DB2   3E20      ld   a, 20h
+
+Label157:
+ 9DB4   21000F    ld   hl, 00F00h
+ 9DB7   220C80    ld   (0800Ch), hl 
+ 9DBA   CD0147    call _putmap
+
+Label154:
+ 9DBD   CD1440    call _getcsc
+ 9DC0   A7        and  a       
+ 9DC1   CABD9D    jp   z, Label154
+ 9DC4   FE36      cp   36h
+ 9DC6   CAE19D    jp   z, Label155
+ 9DC9   FE30      cp   30h
+ 9DCB   CAFD9D    jp   z, Label156
+ 9DCE   FDCB12A6  res  4, (iy+12h)
+ 9DD2   FDCB129E  res  3, (iy+12h)
+ 9DD6   C9        ret          
+
+Label152:
+ 9DD7   3EE3      ld   a, 0E3h
+ 9DD9   C3B49D    jp   Label157
+
+Label153:
+ 9DDC   3EE1      ld   a, 0E1h
+ 9DDE   C3B49D    jp   Label157
+
+Label155:
+ 9DE1   FDCB127E  bit  7, (iy+12h)
+ 9DE5   C2BD9D    jp   nz, Label154
+ 9DE8   FDCB125E  bit  3, (iy+12h)
+ 9DEC   C2F69D    jp   nz, Label158
+ 9DEF   FDCB12DE  set  3, (iy+12h)
+ 9DF3   C3969D    jp   Label3
+
+Label158:
+ 9DF6   FDCB129E  res  3, (iy+12h)
+ 9DFA   C3969D    jp   Label3
+
+Label156:
+ 9DFD   FDCB127E  bit  7, (iy+12h)
+ 9E01   C2BD9D    jp   nz, Label154
+ 9E04   FDCB1276  bit  6, (iy+12h)
+ 9E08   C2369E    jp   nz, Label159
+ 9E0B   FDCB1266  bit  4, (iy+12h)
+ 9E0F   C22F9E    jp   nz, Label160
+ 9E12   FDCB125E  bit  3, (iy+12h)
+ 9E16   C2209E    jp   nz, Label161
+ 9E19   FDCB12E6  set  4, (iy+12h)
+ 9E1D   C3969D    jp   Label3
+
+Label161:
+ 9E20   FDCB12F6  set  6, (iy+12h)
+ 9E24   FDCB129E  res  3, (iy+12h)
+ 9E28   FDCB12A6  res  4, (iy+12h)
+ 9E2C   C3969D    jp   Label3
+
+Label160:
+ 9E2F   FDCB12A6  res  4, (iy+12h)
+ 9E33   C3969D    jp   Label3
+
+Label159:
+ 9E36   FDCB12B6  res  6, (iy+12h)
+ 9E3A   C3969D    jp   Label3
+
+Label162:
+ 9E3D   3EFF      ld   a, 0FFh
+ 9E3F   D301      out  (01h), a  
+ 9E41   C9        ret          
+
+Label119:
+ 9E42   CD3D9E    call Label162
+ 9E45   3EFE      ld   a, 0FEh
+ 9E47   C3779E    jp   Label163
+
+Label133:
+ 9E4A   CD3D9E    call Label162
+ 9E4D   3EFD      ld   a, 0FDh
+ 9E4F   C3779E    jp   Label163
+
+Label126:
+ 9E52   CD3D9E    call Label162
+ 9E55   3EFB      ld   a, 0FBh
+ 9E57   C3779E    jp   Label163
+
+Label128:
+ 9E5A   CD3D9E    call Label162
+ 9E5D   3EF7      ld   a, 0F7h
+ 9E5F   C3779E    jp   Label163
+
+Label129:
+ 9E62   CD3D9E    call Label162
+ 9E65   3EEF      ld   a, 0EFh
+ 9E67   C3779E    jp   Label163
+
+Label122:
+ 9E6A   CD3D9E    call Label162
+ 9E6D   3EDF      ld   a, 0DFh
+ 9E6F   C3779E    jp   Label163
+ 9E72   CD3D9E    call Label162
+ 9E75   3EBF      ld   a, 0BFh
+
+Label163:
+ 9E77   D301      out  (01h), a  
+ 9E79   DB01      in   a, (01h)  
+ 9E7B   C9        ret          
+
+Label7:
+ 9E7C   FDCB214E  bit  1, (iy+21h)
+ 9E80   CC3E99    call z, Label9
+ 9E83   DA5393    jp   c, Label10
+ 9E86   FDCB2146  bit  0, (iy+21h)
+ 9E8A   C4064E    call nz, _CLOSEPROG
+ 9E8D   FDCB14BE  res  7, (iy+14h)
+ 9E91   FDCB09A6  res  4, (iy+09h)
+ 9E95   ED7B8F85  ld   sp, (0858Fh) 
+ 9E99   CD5B51    call _GRBUFCLR
+ 9E9C   210000    ld   hl, __bank_ret
+ 9E9F   220C80    ld   (0800Ch), hl 
+ 9EA2   3E20      ld   a, 20h
+ 9EA4   CD0147    call _putmap
+ 9EA7   CD5D47    call _clrScrnFull
+ 9EAA   CD6547    call _CLRTXTSHD
+ 9EAD   C9        ret          
+
+Str1:
+ 9EAE             .db  0BCh
+ 9EAF             .db  " Text editor", 00h
+
+Str2:
+ 9EBC             .db  "1: Nieuw", 00h
+
+Str3:
+ 9EC5             .db  "2: Openen", 00h
+
+Str5:
+ 9ECF             .db  "3: Opslaan als", 00h
+
+Str4:
+ 9EDE             .db  "4: Afsluiten", 00h
+
+Str8:
+ 9EEB             .db  "Eigenschappen", 00h
+
+Str9:
+ 9EF9             .db  "Naam:", 00h
+
+Str10:
+ 9EFF             .db  "Wiskunde", 00h
+
+Str11:
+ 9F08             .db  "Natuurkunde", 00h
+
+Str12:
+ 9F14             .db  "Scheikunde", 00h
+
+Str13:
+ 9F1F             .db  "Overig", 00h
+
+Str14:
+ 9F26             .db  "Opslaan", 00h
+
+Str15:
+ 9F2E             .db  "Bestand bestaat al.           "
+ 9F4C             .db  "  Overschrijven?  (J/N)", 00h
+
+Str7:
+
+Label169:
+ 9F64             .db  "Wijzigingen     opslaan? (J/N "
+ 9F82             .db  "  clear=annuleren)", 00h
+
+Str6:
+ 9F95             .db  "Er zijn geen    plugins gevond"
+ 9FB3             .db  "en", 00h
+ 9FB6   
+ ; Disassembled by Jimmy Conner - timagic@yahoo.com
+ ; @ 24-4-2003 21:13:39
+ ; Disassembler v1.7
+ ; Total Opcodes: 1218
+ ; Total Data: 264
+ ; Z80 AC   -  z80.us.fornax.com
+ ; Personal -  www.timagic.cjb.net
+.end
+end
