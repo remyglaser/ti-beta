@@ -1,6 +1,17 @@
+; Copyright (C) 2006  Remy Glaser
+; 
+; This program is free software; you can redistribute it and/or
+; modify it under the terms of the GNU General Public License
+; as published by the Free Software Foundation; either version 2
+; of the License, or (at your option) any later version.
+; 
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+; LICENSE.html for more details.
+; 
 
 SIMPLE_SCROLL:
-
  ld hl,(cursor_adress)
  dec hl
  ld (Min_adress),hl
@@ -21,13 +32,13 @@ OUTPUT_PAGE_LOOP:
  cp tag_Return
  jp z,NEXT_LINE
  cp tag_freetext
- jr z,FREETEXT
+ jp z,FREETEXT
  cp tag_invert
- jr z,INVERSE
+ jp z,INVERSE
  cp tag_tab
  jp z,TAB
  cp tag_picture
- jr z,PIC
+ jp z,PIC
  cp tag_page_end
  jp z,SCROLL_KEY
  cp tag_Square
@@ -40,13 +51,13 @@ OUTPUT_PAGE_LOOP:
  ld a,(iy+textflags)
 ; ld a,($942B)
 ; and a
-; jr z,STRANGE_ERROR
+; jp z,STRANGE_ERROR
 
  call INCCURSOR
- jr OUTPUT_PAGE_LOOP
+ jp OUTPUT_PAGE_LOOP
 
 ;STRANGE_ERROR:
-; jr _ERRLINKXMIT	; strange response to a strange bug
+; jp _ERRLINKXMIT
 
 
 INVERSE:
@@ -54,7 +65,7 @@ INVERSE:
  xor %00001000
  ld (iy+textFlags),a
  call INCCURSOR
- jr OUTPUT_PAGE_LOOP
+ jp OUTPUT_PAGE_LOOP
 
 FREETEXT:
  ld hl,(pencol)
@@ -78,17 +89,17 @@ FREETEXTLOOP:
  call INCCURSOR
  ld a,(hl)
  cp tag_invert
- jr z,FREE_INVERSE
+ jp z,FREE_INVERSE
  cp tag_freetext
- jr z,FREE_END
+ jp z,FREE_END
  bcall(_vputmap)
- jr FREETEXTLOOP
+ jp FREETEXTLOOP
 
 FREE_INVERSE:
  ld a,(iy+Textflags)
  xor %00001000
  ld (iy+textFlags),a
- jr FREETEXTLOOP
+ jp FREETEXTLOOP
 
 FREE_END:
  exx
@@ -198,12 +209,12 @@ DRAW_MINILOOP:
  ld a,12
  sub b
  and a
- jr z,DRAW_LOOP
+ jp z,DRAW_LOOP
  ld b,a
 DRAW_SKIPLOOP:
  call PIC_INC
  djnz DRAW_SKIPLOOP
- jr DRAW_LOOP
+ jp DRAW_LOOP
 
 
 
@@ -235,7 +246,7 @@ PIC_INC:
  ld hl,(PIC_CURRENT)
  inc hl
  bcall(_cphlde)
- jr z,PIC_EXIT
+ jp z,PIC_EXIT
  ld (PIC_CURRENT),hl
  ret
 
@@ -304,21 +315,21 @@ CUSTOM_LINE:
 TAB:
  ld a,(pencol)
  add a,255-24
- jr c,LARGERTHAN24
+ jp c,LARGERTHAN24
  ld a,24
- jr END_TAB
+ jp END_TAB
 
 LARGERTHAN24:
  ld a,(pencol)
  add a,255-48
- jr c,LARGERTHAN48
+ jp c,LARGERTHAN48
  ld a,48
- jr END_TAB
+ jp END_TAB
 
 LARGERTHAN48:
  ld a,(pencol)
  add a,255-72
- jr c,END_TAB
+ jp c,END_TAB
  ld a,72
 
 END_TAB:
@@ -328,12 +339,12 @@ END_TAB:
 
 INCCURSOR:
  call INCCURSOR_SYS
- jr c,RETTO__SCROLL_KEY
+ jp c,RETTO__SCROLL_KEY
  ret
 
 RETTO__SCROLL_KEY:
  pop hl
- jr SCROLL_KEY
+ jp SCROLL_KEY
 
 NEXT_LINE:
  call INCCURSOR
@@ -356,12 +367,12 @@ SCROLL_KEY:
 SCROLL_KEYLOOP:
  call BETAKEY
  cp key_up
- jr z,UP
+ jp z,UP
  cp key_down
- jr z,DOWN
+ jp z,DOWN
  cp key_enter
- jr z,SCROLL_BETASHELL
- jr SCROLL_KEYLOOP
+ jp z,SCROLL_BETASHELL
+ jp SCROLL_KEYLOOP
 
 DOWN:
  ld a,(asave)
@@ -379,17 +390,17 @@ UP:
  ld hl,(cursor_adress)
  ld a,(hl)
  cp tag_picture
- jr z,SKIP_PICTURE
+ jp z,SKIP_PICTURE
 
 UP_LOOP:
  call DECCURSOR
 
  ld a,(hl)
  cp tag_picture
- jr z,SKIP_PICTURE
+ jp z,SKIP_PICTURE
 
  cp tag_page_end
- jr nz,up_loop
+ jp nz,up_loop
  djnz UP_LOOP
 
  call INCCURSOR
@@ -409,12 +420,12 @@ SKIP_PIC_LOOP:
  ld e,c
  ld hl,0
  bcall(_cphlde)
- jr nz,SKIP_PIC_LOOP
+ jp nz,SKIP_PIC_LOOP
  ld b,5
 DECCURSOR_LOOP:
  call DECCURSOR
  djnz DECCURSOR_LOOP
- jr UP_LOOP
+ jp UP_LOOP
 
 
 DECCURSOR:
@@ -423,7 +434,7 @@ DECCURSOR:
  ld hl,(cursor_adress)
  dec hl
  bcall(_cphlde)
- jr z,RETTO__OUTPUT_PAGE
+ jp z,RETTO__OUTPUT_PAGE
  ld (cursor_adress),hl
  ret
 RETTO__OUTPUT_PAGE:

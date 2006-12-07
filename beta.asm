@@ -1,10 +1,23 @@
+; Copyright (C) 2006  Remy Glaser
+; 
+; This program is free software; you can redistribute it and/or
+; modify it under the terms of the GNU General Public License
+; as published by the Free Software Foundation; either version 2
+; of the License, or (at your option) any later version.
+; 
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+; LICENSE.html for more details.
+; 
+
 .Nolist
 #define equ .equ
 #define EQU .equ
 #define end .end
 #define END .end
-#include "ti83asm.inc"		; TI-83 code
-;#include "ti83plus.inc"	; TI-83+ code
+;#include "ti83asm.inc"		; TI-83 code
+#include "ti83plus.inc"	; TI-83+ code
 
 #define Square(aa,bb,cc,dd)	ld bc,aa*256+bb	\ ld de,cc*256+dd	\ call SQUARE
 
@@ -24,9 +37,9 @@ tag_Return	equ	$D6	; D6
 ;tag_		equ	$F6
 tag_Author	equ	$F7	; F7 [text] F7
 tag_Title	equ	$F8	; F8 [text] F8
-tag_Square	equ	$F9	; F9 [x1] [y1] [x2] [y2] [op] F9
-tag_Line	equ	$FA	; FA [x1] [y1] [x2] [y2] [op] FA
-tag_Picture	equ	$FB	; FB [x] [y] [width] [height] [pic] [length H] [length L] FB
+tag_Square	equ	$F9	; F9 [x1] [y1] [x2] [y2] [op]
+tag_Line	equ	$FA	; FA [x1] [y1] [x2] [y2] [op]
+tag_Picture	equ	$FB	; FB [x] [y] [width] [height] [pic] [length H] [length L]
 tag_FreeText	equ	$FC	; FC [x] [y] [text] FC
 tag_Invert	equ	$FD	; FD [text] FD
 tag_Tab		equ	$FE	; FE
@@ -34,20 +47,20 @@ tag_Page_End	equ	$FF	; FF
 
 ; Flags:
 SelectFlags	EQU	asm_flag1
-;		EQU	7
-;		EQU	6
-;		EQU	5
-;		EQU	4
+;XWiskunde	EQU	7
+;XNatuurkunde	EQU	6
+;XScheikunde	EQU	5
+;XNoSubject      EQU	4
 xCalc		EQU	3
 xText		EQU	2
 ;		EQU	1
 ;		EQU	0
 
 Properties	EQU	asm_flag2
-;		EQU	7
-;		EQU	6
-;		EQU	5
-;		EQU	4
+;XWiskunde	EQU	7
+;XNatuurkunde	EQU	6
+;XScheikunde	EQU	5
+;XNoSubject     EQU	4
 ;xCalc		EQU	3
 ;xText		EQU	2
 ;		EQU	1
@@ -56,7 +69,7 @@ Properties	EQU	asm_flag2
 BetaFlags	EQU	asm_flag3
 LftMenu		EQU	0
 MenuInDisplay	EQU	1
-Pic1stApp	EQU	2
+;		EQU	2
 ;		EQU	3
 ;		EQU	4
 ;		EQU	5
@@ -210,9 +223,9 @@ BEGINNING_OF_BETA:
 
 ; (re)set flags
  res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
-; res 2,(iy+50)			; No large font on graph screen			; TI-83+ code
-; set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only		; TI-83+ code
- res plotLoc,(iy+plotflags)	; TI-83 code
+ res 2,(iy+50)			; No large font on graph screen			; TI-83+ code
+ set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only		; TI-83+ code
+; res plotLoc,(iy+plotflags)	; TI-83 code
  set textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
 
 ; Save SP register
@@ -283,6 +296,8 @@ UPDATE_MENU:
 ;| bcall(_vputmap)
 
  bcall(_zeroop1)
+ ld a,progobj
+ ld (op1),a
  call _FindBetaUp
  jp c,NONE_FOUND
 
@@ -296,10 +311,12 @@ LMENU_LOOP:
  call _chkfindplugin
  call CLEAR_PROGRAM_INFO
  vLocate(40,40)
- call OUTPUT_AUTHOR
+ ld hl,(Author)
+ bcall(_vPuts)
 
  vLocate(2,56)
- call OUTPUT_DESCRIPTION
+ ld hl,Description
+ bcall(_vPuts)
 
 
  bit LftMenu,(iy+BetaFlags)
@@ -321,12 +338,12 @@ LMENU_KEYLOOP:
 LEFT_UP:
  ld a,(LftMenuCur)
  cp 1
- jr z,PLUG_UP			; selected plugin is at the top->scroll entire list
+ jr z,PLUG_UP
  dec a
  ld (x),a
  call _FindBetaDown		; update op1
 ; jr c,LMENU_KEYLOOP		; should not be possible
-; jp c,_errTolTooSmall		; so why jump to some weird exception when the impossible happens?
+ jp c,_errTolTooSmall
  call DELETE_LEFT
  ld a,(x)
  ld (LftMenuCur),a
@@ -342,7 +359,7 @@ PLUG_UP:		; scroll list up
 LEFT_DOWN:
  ld a,(LftMenuCur)
  cp 9
- jr z,PLUG_DOWN			; selected plugin is at the bottom->scroll entire list
+ jr z,PLUG_DOWN
  inc a
  ld (x),a
  call _FindBetaUp
@@ -362,8 +379,8 @@ PLUG_DOWN:
 LEFT_ENTER:
  res MenuInDisplay,(iy+BetaFlags)
  bit xCalc,(iy+properties)
- jp nz,CALC_PLUG		; excecute the program
- jp z,SIMPLE_SCROLL		; view the textfile
+ jp nz,CALC_PLUG
+ jp z,SIMPLE_SCROLL
 
 LOAD_EMPTY:
  ld a,$06
@@ -426,6 +443,20 @@ LEFT_MENU:
 RIGHT_ENTER:
  ld a,(RightMenuCur)
 
+;| ld b,%10000000		; Wiskunde
+;| cp 1
+;| jr z,XOR_IT
+
+;| ld b,%01000000		; Natuurkunde
+;| cp 2
+;| jr z,XOR_IT
+
+;| ld b,%00100000		; Scheikunde
+;| cp 3
+;| jr z,XOR_IT
+
+;| ld b,%00010000		; Overigen
+
  ld b,%00000100			; Text
  cp 1
  jr z,XOR_IT
@@ -453,29 +484,8 @@ NONE_FOUND:
  jp RMENU_LOOP
 
 
-OUTPUT_AUTHOR:
-; Outputs the author string. No normal routine can be used since this string is neither leading-length nor zero terminated
- ld hl,(author)
- ld a,(author_length)
- ld b,a
-OUTPUT_AUTHOR_LOOP:
- ld a,(hl)
- bcall(_VPutMap)
- inc hl
- djnz OUTPUT_AUTHOR_LOOP
- ret
 
-OUTPUT_DESCRIPTION:
-; Outputs the description string. No normal routine can be used since this string is neither leading-length nor zero terminated
- ld hl,(description)
- ld a,(description_length)
- ld b,a
-OUTPUT_DESCRIPTION_LOOP:
- ld a,(hl)
- bcall(_VPutMap)
- inc hl
- djnz OUTPUT_DESCRIPTION_LOOP
- ret
+
 
 
 
@@ -541,6 +551,615 @@ CALCULATE_RIGHT:
  ld l,40
  ld (pencol),hl
  ret
+
+
+
+
+
+
+
+_ChkFindPlug:
+; _ChkfindPlugin checks the validity of a plugin which name is in op1
+; Input:
+; Op1=name of plugin to check
+
+; Output:
+
+; carry flag set if invalid plugin
+; carry flag reset if valid plugin
+; (iy+Properties)=Plugin flags
+
+ bcall(_chkfindsym)
+ jp c,CS_INVALID
+ xor a
+ ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
+; TI-83+ code
+ 
+ 
+ 
+ ld a,b
+ and a
+ jr nz,CS_INVALID
+ 
+ 
+ 
+; End
+
+ ex de,hl
+ ld e,(hl)		; length low byte
+ inc hl
+ ld d,(hl)		; length high byte
+ inc hl
+ ld (cursor_adress),hl
+ add hl,de		; beginning+length=end
+ ld (max_adress),hl
+
+ ld hl,(cursor_adress)
+ ld a,(hl)
+ cp $D9			; STOP
+ jr z,CS_TEXTPLUGIN
+ cp $3F			; \n
+ jr z,CS_CALCPLUGIN
+ jp INVALID2
+
+CS_TEXTPLUGIN:
+ call CHK_INCCURSOR
+ cp $3F			; \n
+ jr nz,CS_INVALID
+
+ call CHK_INCCURSOR
+ or %00000100		; Make sure text flag is set
+ ld (iy+properties),a
+
+ rcf
+ ret
+
+CS_CALCPLUGIN:
+ call CHK_INCCURSOR
+ cp $2A
+ jp nz,INVALID2
+
+ call CHK_INCCURSOR
+ cp $29				; space
+ jr z,CS_SKIP_ONE
+ cp $3F
+ jr z,CS_SKIP_NONE
+CS_SKIP_TWO:
+ call CHK_INCCURSOR
+CS_SKIP_ONE:
+ call CHK_INCCURSOR
+CS_SKIP_NONE:
+ cp $3F
+ jp nz,INVALID2
+
+ set xCalc,(iy+Properties)	; Make sure calc flag is set
+
+ rcf
+ ret
+
+;| call CHK_INCCURSOR
+;| cp $2A			; "
+;| jp nz,INVALID2
+
+;| call CHK_INCCURSOR
+;| cp $29			; space
+;| jr z,CS_NO_OK
+;| cp 'W'
+;| jr z,CS_WI
+;| cp 'N'
+;| jr z,CS_NA
+;| cp 'S'
+;| jr z,CS_SK
+;| jp INVALID2
+;|CS_WI:
+;| call CHK_INCCURSOR
+;| cp 'I'
+;| ld a,%10001000
+;| jr z,CS_OK
+;| jp INVALID2
+;|CS_NA:
+;| call CHK_INCCURSOR
+;| cp 'A'
+;| ld a,%01001000
+;| jr z,CS_OK
+;| jp INVALID2
+;|CS_SK:
+;| call CHK_INCCURSOR
+;| cp 'K'
+;| ld a,%00101000
+;| jr z,CS_OK
+;| jp INVALID2
+;|CS_NO_OK:		; no subject
+;| ld a,%00011000
+
+;|CS_OK:
+;| ld (iy+Properties),a
+
+
+CS_INVALID:
+SCF:
+ scf		; set carry flag
+ ret
+
+
+
+
+_ChkFindPlugin:
+; _ChkfindPlugin checks the validity of a plugin which name is in op1
+; and returns its flags and adress
+; Input:
+; Op1=name of plugin to detect
+
+; Output:
+; a: Plugin flags
+; carry flag set if invalid plugin
+; carry flag reset if valid plugin
+; (iy+Properties)=Plugin flags
+; (Current_adress)=pointer to plugin start in RAM
+; Description=Program Description
+; (Author)=Author
+
+
+ bcall(_chkfindsym)
+ jp c,INVALID2
+ xor a
+ ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
+; TI-83+ code
+ 
+ 
+ 
+ ld a,b
+ and a
+ jp nz,INVALID
+ 
+ 
+ 
+; End
+
+ ex de,hl
+ ld e,(hl)		; length low byte
+ inc hl
+ ld d,(hl)		; length high byte
+ inc hl
+ ld (cursor_adress),hl
+ add hl,de		; beginning+length=end
+ ld (max_adress),hl
+
+ ld hl,(cursor_adress)
+ ld a,(hl)
+ cp $D9			; Stop
+ jr z,TEXTPLUGIN
+ cp $3F			; \n
+ jp z,CALCPLUGIN
+ jp INVALID2
+
+TEXTPLUGIN:
+ call CHK_INCCURSOR
+ cp $3F			; \n
+ jp nz,INVALID2
+
+ call CHK_INCCURSOR
+ or %00000100		; Make sure text flag is set
+ ld (iy+Properties),a
+
+ ; Search for Description
+
+ xor a
+ ld (String_length),a
+ ld hl,String_temp
+ ld (String_adress),hl
+
+ call TXT_INCCURSOR
+ jr c,TXT_TITLE_LOOP_END
+ cp tag_title
+ jr nz,TXT_TITLE_LOOP_END
+
+TXT_TITLE_LOOP:
+ call TXT_INCCURSOR
+ jr c,TXT_TITLE_LOOP_END
+ cp tag_title
+ jr z,TXT_TITLE_LOOP_END
+
+ push af
+ ld l,a
+ ld h,8
+ bcall(_htimesl)
+ bcall(_sFont_Len)	; calculate length
+ ld a,(String_length)
+ add a,b		; new string length
+ add a,255-92		; Description max=92 pixels
+ jr c,TXT_TITLE_TOO_LONG
+ sub 255-92
+ ld (String_length),a
+
+ pop af
+ ld hl,(String_adress)
+ ld (hl),a
+ inc hl
+ ld (String_adress),hl
+
+ jr TXT_TITLE_LOOP
+
+TXT_TITLE_TOO_LONG:
+ call TXT_INCCURSOR
+ jr c,TXT_TITLE_LOOP_END
+ cp tag_title
+ jr z,TXT_TITLE_LOOP_END
+ jr TXT_TITLE_TOO_LONG
+
+TXT_TITLE_LOOP_END:
+ ld hl,(String_adress)
+ ld (hl),0		; it's now a zero-terminated string
+ inc hl
+ ld (String_adress),hl
+ ld (Author),hl
+
+
+
+
+
+
+
+
+
+
+
+TXT_AUTHOR:
+
+ ; Search for Author
+
+ xor a
+ ld (String_length),a
+ call TXT_INCCURSOR
+ jr c,TXT_AUTHOR_LOOP_END
+ cp tag_author
+ jr nz,TXT_AUTHOR_LOOP_END
+
+TXT_AUTHOR_LOOP:
+ call TXT_INCCURSOR
+ jr c,TXT_AUTHOR_LOOP_END
+ cp tag_author
+ jr z,TXT_AUTHOR_LOOP_END
+
+ push af
+ ld l,a
+ ld h,8
+ bcall(_htimesl)
+ bcall(_sFont_Len)	; calculate length
+ ld a,(String_length)
+ add a,b		; new string length
+ add a,255-54		; Description max=54 pixels
+ jr c,TXT_AUTHOR_TOO_LONG
+ sub 255-54
+ ld (String_length),a
+
+ pop af
+ ld hl,(String_adress)
+ ld (hl),a
+ inc hl
+ ld (String_adress),hl
+
+ jr TXT_AUTHOR_LOOP
+
+TXT_AUTHOR_TOO_LONG:
+ call TXT_INCCURSOR
+ jr c,TXT_AUTHOR_LOOP_END
+ cp tag_author
+ jr z,TXT_AUTHOR_LOOP_END
+ jr TXT_AUTHOR_TOO_LONG
+
+TXT_AUTHOR_LOOP_END:
+ ld hl,(String_adress)
+ ld (hl),0		; it's now a zero-terminated string
+
+ call TXT_INCCURSOR
+ rcf
+ ret
+
+
+
+
+CALCPLUGIN:
+ call CHK_INCCURSOR
+ cp $2A
+ jp nz,INVALID2
+
+ call CHK_INCCURSOR
+ cp $29				; space
+ jr z,SKIP_ONE
+ cp $3F
+ jr z,SKIP_NONE
+SKIP_TWO:
+ call CHK_INCCURSOR
+SKIP_ONE:
+ call CHK_INCCURSOR
+SKIP_NONE:
+ cp $3F
+ jp nz,INVALID2
+
+ set xCalc,(iy+Properties)	; Make sure calc flag is set
+
+;| call CHK_INCCURSOR
+;| cp $2A			; "
+;| jp nz,INVALID2
+;|
+;| call CHK_INCCURSOR
+;| cp $29			; space
+;| jr z,SU_NO_OK
+;| cp 'W'
+;| jr z,SU_WI
+;| cp 'N'
+;| jr z,SU_NA
+;| cp 'S'
+;| jr z,SU_SK
+;| jp INVALID2
+;|SU_WI:
+;| call CHK_INCCURSOR
+;| cp 'I'
+;| ld a,%10001000
+;| jr z,OKOK
+;| jp INVALID2
+;|SU_NA:
+;| call CHK_INCCURSOR
+;| cp 'A'
+;| ld a,%01001000
+;| jr z,OKOK
+;| jp INVALID2
+;|SU_SK:
+;| call CHK_INCCURSOR
+;| cp 'K'
+;| ld a,%00101000
+;| jr z,OKOK
+;| jp INVALID2
+;|SU_NO_OK:		; no subject
+;| ld a,%00011000
+
+;|OKOK:
+
+
+
+
+
+ ; Search for Description
+
+ xor a
+ ld (String_length),a
+ ld hl,String_temp
+ ld (String_adress),hl
+
+ call CLC_INCCURSOR
+ jr c,CLC_TITLE_LOOP_END
+ cp $2A
+ jr nz,CLC_TITLE_LOOP_END
+
+CLC_TITLE_LOOP:
+ call CLC_INCCURSOR
+ jr c,CLC_TITLE_LOOP_END
+ cp $3F
+ jr z,CLC_TITLE_LOOP_END
+
+ push af
+ ld l,a
+ ld h,8
+ bcall(_htimesl)
+ bcall(_sFont_Len)	; calculate length
+ ld a,(String_length)
+ add a,b		; new string length
+ add a,255-92		; Description max=92 pixels
+ pop hl			; af pops out as hl because it causes a return error if title too long (don't pop as af because carry flag will change)
+ jr c,CLC_TITLE_TOO_LONG
+ push hl
+ sub 255-92
+ ld (String_length),a
+
+ pop af
+ ld hl,(String_adress)
+ ld (hl),a
+ inc hl
+ ld (String_adress),hl
+
+ jr CLC_TITLE_LOOP
+
+CLC_TITLE_TOO_LONG:
+ call CLC_INCCURSOR
+ jr c,CLC_TITLE_LOOP_END
+ cp $3F
+ jr z,CLC_TITLE_LOOP_END
+ jr CLC_TITLE_TOO_LONG
+
+CLC_TITLE_LOOP_END:
+ ld hl,(String_adress)
+ ld (hl),0		; it's now a zero-terminated string
+ inc hl
+ ld (String_adress),hl
+ ld (Author),hl
+
+
+
+
+
+
+
+
+
+
+
+CLC_AUTHOR:
+
+ ; Search for Author
+
+ xor a
+ ld (String_length),a
+ call CLC_INCCURSOR
+ jr c,CLC_AUTHOR_LOOP_END
+ cp $2A
+ jr nz,CLC_AUTHOR_LOOP_END
+
+CLC_AUTHOR_LOOP:
+ call CLC_INCCURSOR
+ jr c,CLC_AUTHOR_LOOP_END
+ cp $3F
+ jr z,CLC_AUTHOR_LOOP_END
+
+ push af
+ ld l,a
+ ld h,8
+ bcall(_htimesl)
+ bcall(_sFont_Len)	; calculate length
+ ld a,(String_length)
+ add a,b		; new string length
+ add a,255-54		; Description max=54 pixels
+ jr c,CLC_AUTHOR_TOO_LONG
+ sub 255-54
+ ld (String_length),a
+
+ pop af
+ ld hl,(String_adress)
+ ld (hl),a
+ inc hl
+ ld (String_adress),hl
+
+ jr CLC_AUTHOR_LOOP
+
+CLC_AUTHOR_TOO_LONG:
+ call CLC_INCCURSOR
+ jr c,CLC_AUTHOR_LOOP_END
+ cp $3F
+ jr z,CLC_AUTHOR_LOOP_END
+ jr CLC_AUTHOR_TOO_LONG
+
+CLC_AUTHOR_LOOP_END:
+ ld hl,(String_adress)
+ ld (hl),0		; it's now a zero-terminated string
+
+ rcf
+ ret
+
+
+
+
+
+
+
+INVALID2:
+ xor a
+ ld (iy+Properties),a
+ scf		; set carry flag
+ ret
+
+CHK_INCCURSOR:
+ call INCCURSOR_SYS
+ jr c,INVALID2
+ ret
+
+TXT_INCCURSOR:
+CLC_INCCURSOR:
+INCCURSOR_SYS:
+ ld hl,(max_adress)
+ ex de,hl
+ ld hl,(cursor_adress)
+ inc hl
+ bcall(_cphlde)
+ jp z,SCF
+ ld (cursor_adress),hl
+ ld a,(hl)
+ rcf
+ ret
+
+
+
+
+
+
+
+
+
+
+_FindBetaUp:
+; _FindBetaUp finds alphabetically the next valid beta plugin
+; Input:
+; Op1: previous program name
+
+; Output:
+; OP1: name of next plugin
+; a: Plugin flags
+; carry flag set if this was the last plugin
+; carry flag reset this was not the last plugin
+; (iy+Properties)=Plugin flags
+; (Current_adress)=pointer to plugin start in RAM
+
+ ld hl,Cursor_adress
+ ld de,Cursor_adress2
+ ld bc,6
+ ldir
+ bcall(_op1toop5)
+FindBetaUp:
+ bcall(_op1toop6)
+ bcall(_findalphaup)
+ ld hl,FindBetaUp		; Needs to be saved in case of invalid plugins
+ ld (up_or_down),hl
+ jr FINDBeta
+
+_FindBetaDown:
+; _FindBetaDown finds alphabetically the previous valid beta plugin
+; Input:
+; Op1: current program name
+
+; Output:
+; OP1: name of previous plugin
+; carry flag set if this was the first plugin
+; carry flag reset this was not the first plugin
+
+ bcall(_op1toop5)
+ ld hl,Cursor_adress
+ ld de,Cursor_adress2
+ ld bc,6
+ ldir
+FindBetaDown:
+ bcall(_Op1toop6)
+ bcall(_findalphadn)
+ ld hl,FindBetaDown		; Needs to be saved in case of invalid plugins
+ ld (up_or_down),hl
+
+FINDBeta:
+ exx
+ ex af,af'
+ bcall(_op6toop2)
+ call cpop1op2
+ jr nz,NO_BUG
+
+FindBeta_Invalid:
+ bcall(_op5toop1)		; restore original name
+ ld hl,Cursor_adress2		; restore original flags & adresses
+ ld de,Cursor_adress
+ ld bc,6
+ ldir
+ scf
+ ret
+
+NO_BUG:
+ exx
+ ex af,af'
+
+ call _chkfindplug
+ jr c,INVALID
+
+ ld a,(iy+selectflags)		; This code checks if this plug is what we asked for
+ xor %11111111
+ ld b,a
+ ld a,(iy+Properties)
+ and b
+ jr nz,INVALID
+
+ inc hl				; hl is at the actual beginning of the plugin
+ ld (current_adress),hl
+ rcf
+ ret
+
+INVALID:
+ ld hl,(up_or_down)		; _FindBetaup or _FindBetadown
+ push hl
+ ret		; jump to _FindBetaup or _FindBetadown
 
 
 
@@ -644,14 +1263,14 @@ CLEAR_PROGRAM_INFO:
  Square(40,40,93,45)	; clear description
  ret
 
-;OPEN_PLUGIN:			; There is not a single reference to this label! so much for efficiency..
-; bcall(_op5toop1)		; op5= first plugin in the list
-; call _chkfindplugin		; Gets plugin settings
-;
-; bit XText,(iy+Properties)
-; jr nz,SIMPLE_SCROLL		; goto scroll engine for text plugins
-; bit XCalc,(iy+Properties)
-; jr nz,CALC_PLUG		; goto basic engine for programs
+OPEN_PLUGIN:
+ bcall(_op5toop1)		; op5= first plugin in the list
+ call _chkfindplugin		; Gets plugin settings
+
+ bit XText,(iy+Properties)
+ jr nz,SIMPLE_SCROLL		; goto scroll engine for text plugins
+ bit XCalc,(iy+Properties)
+ jr nz,CALC_PLUG		; goto basic engine for programs
 
 
 
@@ -671,7 +1290,7 @@ CALC_PLUG:
  bcall(_op2toop1)
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
-; res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+ res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
 
  res oninterrupt,(iy+onflags)
  ld sp,(savesp)
@@ -692,9 +1311,9 @@ CALC_PLUG:
 
 
 
-#include "scroll.bta"
+#include "scroll.asm"
 
-#include ".\source\PlugAPI.asm"
+
 
 
 
@@ -704,9 +1323,9 @@ CALC_PLUG:
 
 ;BETAKEY:
 ; bcall(_runindicoff)
-;; bcall(_op1toop3)		; TI-83+ code (prevents MirageOS bug)
+; bcall(_op1toop3)		; TI-83+ code (prevents MirageOS bug)
 ; bcall(_getkey)
-;; bcall(_op3toop1)		; TI-83+ code (prevents MirageOS bug)
+; bcall(_op3toop1)		; TI-83+ code (prevents MirageOS bug)
 ;
 ; bit oninterrupt,(iy+onflags)	; On key
 ; jr nz,EXIT
@@ -739,9 +1358,6 @@ CALC_PLUG:
 ; jr z,BETASHELL
 ; jr UPDATE_MENU
 
-; Betakey is the default keyloop containing all the global keys
-; Returns:
-; a	The keycode
 BETAKEY:
  bcall(_runindicoff)
 
@@ -757,7 +1373,30 @@ GETKEY_LOOP:
  jp z,EXIT
  cp key_quit
  jp z,EXIT
+ ld b,%10001100		; Wiskunde
+ cp key_Y
+ jr z,SHORTCUT
+ ld b,%01001100		; Natuurkunde
+ cp Key_window
+ jr z,SHORTCUT
+ ld b,%00101100		; Scheikunde
+ cp Key_zoom
+ jr z,SHORTCUT
+ ld b,%00011100		; Overigen
+ cp Key_Trace
+ jr z,SHORTCUT
+ ld b,%11111100		; Alles
+ cp Key_graph
+ jr z,SHORTCUT
  ret
+
+SHORTCUT:
+ ld a,b
+ ld (iy+SelectFlags),a
+ bit MenuInDisplay,(iy+BetaFlags)
+ jp z,BETASHELL
+ jp UPDATE_MENU
+
 
 CPOP1OP2:
 ; Compares the program names in op1 and op2, the _cpop1op2 routine compares them as floating point
@@ -791,8 +1430,8 @@ SQUARE:
 ; d: x coordinate of lower right corner
 ; e: y coordinate of lower right corner
 ; h: 0 - pixel off operation
-;    1 - pixel on operation
-;    2 - pixel change operation (xor)
+;    0 - pixel on operation
+;    0 - pixel change operation (xor)
 ; @require b<96 && c<64 && d<96 && e<64 && b<=d && c<=e
 ; to draw a line, make sure b=d or c=e
 ; to draw a point, make sure b=d and c=e
@@ -983,11 +1622,6 @@ PXL_ON:
  ret
 
 
-
-
-
-
-
 SAVE_SELECT_FLAGS:
  ld hl,BetaName
  ld de,Op1
@@ -1000,8 +1634,8 @@ SAVE_SELECT_FLAGS:
  inc hl
  ld d,(hl)
  push hl		; hl=program adress
- ld hl,END_OF_BETA-progstart	; length squished	; TI-83 code
-; ld hl,END_OF_BETA-progstart+2	; length squished+length bytes	; TI-83+ code
+; ld hl,END_OF_BETA-progstart	; length squished	; TI-83 code
+ ld hl,END_OF_BETA-progstart+2	; length squished+length bytes	; TI-83+ code
  bcall(_cphlde)		; check lenght to see if beta is unquished
  pop hl
  ret nz
@@ -1015,7 +1649,7 @@ EXIT:
  call SAVE_SELECT_FLAGS
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
-; res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+ res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
 
  res oninterrupt,(iy+onflags)
  ld sp,(savesp)
@@ -1046,7 +1680,7 @@ EXIT:
 
 
 
-#include "language.bta"
+#include "language.asm"
 
 
 FlagsSave:
