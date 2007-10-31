@@ -16,8 +16,14 @@
 #define EQU .equ
 #define end .end
 #define END .end
-;#include "ti83asm.inc"		; TI-83 code
-#include "ti83plus.inc"	; TI-83+ code
+
+PLUSCODE	equ	1	; 0 means Ti-83, 1 means Ti-83+
+
+#IF PLUSCODE == 1
+#include "ti83plus.inc"
+#ELSE
+#include "ti83asm.inc"
+#ENDIF
 
 #define Square(aa,bb,cc,dd)	ld bc,aa*256+bb	\ ld de,cc*256+dd	\ call SQUARE
 
@@ -184,6 +190,7 @@ Description	EQU	String_Temp
 .org progstart
 BEGINNING_OF_BETA:
 
+; TODO: Check why this code is left out
 ;; check if beta is executed on the right calc
 ; ld hl,progstart
 ; ld de,BEGINNING_OF_BETA	; compare system progstart with actual progstart
@@ -223,9 +230,12 @@ BEGINNING_OF_BETA:
 
 ; (re)set flags
  res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
- res 2,(iy+50)			; No large font on graph screen			; TI-83+ code
- set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only		; TI-83+ code
-; res plotLoc,(iy+plotflags)	; TI-83 code
+#IF PLUSCODE == 1
+ res 2,(iy+50)			; No large font on graph screen
+ set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+#ELSE
+ res plotLoc,(iy+plotflags)
+#ENDIF
  set textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
 
 ; Save SP register
@@ -283,7 +293,7 @@ UPDATE_MENU:
  call z,LOAD_EMPTY
  bcall(_vputmap)
 
-;| vLocate(44,18)
+;| vLocate(44,18)	; These are two extra menu items after the existing two. Now obsolete.
 ;| ld a,$D0
 ;| bit XScheikunde,(iy+SelectFlags)
 ;| call z,LOAD_EMPTY
@@ -573,17 +583,12 @@ _ChkFindPlug:
  jp c,CS_INVALID
  xor a
  ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
-; TI-83+ code
- 
- 
- 
+
+#IF PLUSCODE == 1
  ld a,b
  and a
  jr nz,CS_INVALID
- 
- 
- 
-; End
+#ENDIF
 
  ex de,hl
  ld e,(hl)		; length low byte
@@ -704,17 +709,12 @@ _ChkFindPlugin:
  jp c,INVALID2
  xor a
  ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
-; TI-83+ code
- 
- 
- 
+
+#IF PLUSCODE == 1
  ld a,b
  and a
  jp nz,INVALID
- 
- 
- 
-; End
+#ENDIF
 
  ex de,hl
  ld e,(hl)		; length low byte
@@ -739,7 +739,7 @@ TEXTPLUGIN:
  jp nz,INVALID2
 
  call CHK_INCCURSOR
- or %00000100		; Make sure text flag is set
+ or %00000100		; Make sure text flag is set, we don't really care for any actual settings in this byte, but it may be used again in the future
  ld (iy+Properties),a
 
  ; Search for Description
@@ -781,11 +781,12 @@ TXT_TITLE_LOOP:
  jr TXT_TITLE_LOOP
 
 TXT_TITLE_TOO_LONG:
+ pop af			; cleans the stack a is not used here (we already known the length is too long)
+TXT_TITLE_TOO_LONG_LOOP:
  call TXT_INCCURSOR
- jr c,TXT_TITLE_LOOP_END
+ jr c,TXT_TITLE_LOOP_END	; EOF
  cp tag_title
- jr z,TXT_TITLE_LOOP_END
- jr TXT_TITLE_TOO_LONG
+ jr nz,TXT_TITLE_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
 
 TXT_TITLE_LOOP_END:
  ld hl,(String_adress)
@@ -793,15 +794,6 @@ TXT_TITLE_LOOP_END:
  inc hl
  ld (String_adress),hl
  ld (Author),hl
-
-
-
-
-
-
-
-
-
 
 
 TXT_AUTHOR:
@@ -842,11 +834,12 @@ TXT_AUTHOR_LOOP:
  jr TXT_AUTHOR_LOOP
 
 TXT_AUTHOR_TOO_LONG:
+ pop af			; cleans the stack a is not used here (we already known the length is too long)
+TXT_AUTHOR_TOO_LONG_LOOP:
  call TXT_INCCURSOR
- jr c,TXT_AUTHOR_LOOP_END
+ jr c,TXT_AUTHOR_LOOP_END	; EOF
  cp tag_author
- jr z,TXT_AUTHOR_LOOP_END
- jr TXT_AUTHOR_TOO_LONG
+ jr nz,TXT_AUTHOR_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
 
 TXT_AUTHOR_LOOP_END:
  ld hl,(String_adress)
@@ -1290,7 +1283,9 @@ CALC_PLUG:
  bcall(_op2toop1)
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
- res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+#IF PLUSCODE == 1
+ res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+#ENDIF
 
  res oninterrupt,(iy+onflags)
  ld sp,(savesp)
@@ -1301,7 +1296,7 @@ CALC_PLUG:
  bcall(_putmap)
  bcall(_clrscrnfull)
  bcall(_clrtxtshd)
-; bcall(_JforceCmdnochar)		; This is the cause of the famous Beta NT memory bug
+; bcall(_JforceCmdnochar)		; This is the cause of the Beta NT memory bug
 
  set ProgExecuting,(iy+newDispf)
  bcall(_ParseInp)
@@ -1323,9 +1318,13 @@ CALC_PLUG:
 
 ;BETAKEY:
 ; bcall(_runindicoff)
-; bcall(_op1toop3)		; TI-83+ code (prevents MirageOS bug)
+;#IF PLUSCODE == 1
+; bcall(_op1toop3)		; prevents MirageOS bug
+;#ENDIF
 ; bcall(_getkey)
-; bcall(_op3toop1)		; TI-83+ code (prevents MirageOS bug)
+;#IF PLUSCODE == 1
+; bcall(_op3toop1)		; prevents MirageOS bug
+;#ENDIF
 ;
 ; bit oninterrupt,(iy+onflags)	; On key
 ; jr nz,EXIT
@@ -1634,8 +1633,11 @@ SAVE_SELECT_FLAGS:
  inc hl
  ld d,(hl)
  push hl		; hl=program adress
-; ld hl,END_OF_BETA-progstart	; length squished	; TI-83 code
- ld hl,END_OF_BETA-progstart+2	; length squished+length bytes	; TI-83+ code
+#IF PLUSCODE == 1
+ ld hl,END_OF_BETA-progstart+2	; length squished+length bytes
+#ELSE
+ ld hl,END_OF_BETA-progstart	; length squished
+#ENDIF
  bcall(_cphlde)		; check lenght to see if beta is unquished
  pop hl
  ret nz
@@ -1649,7 +1651,9 @@ EXIT:
  call SAVE_SELECT_FLAGS
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
- res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only	; TI-83+ code
+#IF PLUSCODE == 1
+ res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+#ENDIF
 
  res oninterrupt,(iy+onflags)
  ld sp,(savesp)

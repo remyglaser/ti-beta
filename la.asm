@@ -1,11 +1,7 @@
-WI_TXT:
- .db "Mathematica",0
-NA_TXT:
- .db "Fysica",0
-SK_TXT:
- .db "Scheikunde",0
-OV_TXT:
- .db "Ceterus",0
+TEXT_TXT:
+ .db "Texts",0
+CALC_TXT:
+ .db "Executables",0
 NONE_TXT:
  .db "(nullus)",0
 AUTHOR_TXT:

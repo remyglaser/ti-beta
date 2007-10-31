@@ -1,13 +1,9 @@
-WI_TXT:
- .db "Mathématiques",0
-NA_TXT:
- .db "Physique",0
-SK_TXT:
- .db "Chimie",0
-OV_TXT:
- .db "Restant",0
+TEXT_TXT:
+ .db "Texte",0
+CALC_TXT:
+ .db "Exécutables",0
 NONE_TXT:
- .db "(personne ne)",0
+ .db "(aucun)",0
 AUTHOR_TXT:
  .db "Auteur:",0
 DESCRIPTION_TXT:
