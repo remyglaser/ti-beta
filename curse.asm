@@ -1,0 +1,73 @@
+; Copyright (C) 2006  Remy Glaser
+; 
+; This program is free software; you can redistribute it and/or
+; modify it under the terms of the GNU General Public License
+; as published by the Free Software Foundation; either version 3
+; of the License, or (at your option) any later version.
+; 
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+; gpl-3.0.txt for more details.
+; 
+
+;SIMPLE_SCROLL:
+
+; bit Xwiskunde,(iy+Properties)		; alleen wiskunde-plugins worden geweigerd.
+; jr z,ACCESS_GRANTED
+ ld a,(iy+properties)
+ and %10000000
+ or a
+ jp z,ACCESS_GRANTED
+CHANGE_CODE:
+ ld hl,MaartensProg			; alleen maartens gr word geblokt.
+ ld de,op1
+ ld bc,9
+ ldir
+ bcall(_chkfindsym)
+ jr c,ACCESS_GRANTED
+STOP_CHANGE:
+
+ ld hl,BetaName				; beta wordt veranderd zodat wiskunde altijd word geblokt.
+ ld de,Op1
+ ld bc,9
+ ldir
+
+ bcall(_chkfindsym)
+ ex de,hl
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ push hl		; hl=program adress
+ ld hl,END_OF_BETA-progstart	; length squished	; TI-83 code
+; ld hl,END_OF_BETA-progstart+2	; length squished+length bytes	; TI-83+ code
+ bcall(_cphlde)		; check lenght to see if beta is unquished
+ pop hl
+ push hl
+ jp nz,_ERRSINGULARMAT	; als beta niet gesquished is (onwaarschijnlijk) spring naar een weirde error
+ ld de,STOP_CHANGE-progstart
+ add hl,de			; hl-> actual stop adress
+ pop de				; de-> beginning of beta
+ push hl			; pushed-> actual stop adress
+ ld hl,CHANGE_CODE-progstart	; hl-> change adr
+ add hl,de			; hl-> actual change adress
+ pop de				; de-> actual stop adress
+ inc de
+ inc hl
+
+CHANGE_LOOP:
+ ld (hl),0
+ inc hl
+ bcall(_cphlde)
+ jr nz,CHANGE_LOOP
+ jp EXIT
+
+
+
+
+
+
+MaartensProg:
+ .db $05,"MAARTEN",0
+
+ACCESS_GRANTED:

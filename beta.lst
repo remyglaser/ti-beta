@@ -1,0 +1,2402 @@
+0001   0000             ; Copyright (C) 2006  Remy Glaser
+0002   0000             ; 
+0003   0000             ; This program is free software; you can redistribute it and/or
+0004   0000             ; modify it under the terms of the GNU General Public License
+0005   0000             ; as published by the Free Software Foundation; either version 2
+0006   0000             ; of the License, or (at your option) any later version.
+0007   0000             ; 
+0008   0000             ; This program is distributed in the hope that it will be useful,
+0009   0000             ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+0010   0000             ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+0011   0000             ; LICENSE.html for more details.
+0012   0000             ; 
+0013   0000             
+0191   0000             .LIST
+0192   9327             .org progstart
+0193   9327             
+0194   9327             ; Save Beta's program name
+0195   9327 21 39 80     ld hl,Op1
+0196   932A 11 91 85     ld de,BetaName
+0197   932D 01 09 00     ld bc,9
+0198   9330 ED B0        ldir
+0199   9332             
+0200   9332             ; Clear Screen
+0201   9332 CD 55 47     bcall(_clrLCDFull)
+0202   9335             
+0203   9335             ; (re)set flags
+0204   9335~            #IFDEF TI83P
+0205   9335~             res 2,(iy+50)			; No large font on graph screen
+0206   9335~             set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+0207   9335             #ENDIF
+0208   9335 FD CB 09 B6  res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
+0209   9339 FD CB 02 8E  res plotLoc,(iy+plotflags)
+0210   933D FD CB 14 FE  set textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+0211   9341             
+0212   9341             ; Save SP register
+0213   9341 ED 73 8F 85  ld (savesp),sp
+0214   9345             
+0215   9345             ; Get select flags
+0216   9345 3A C7 9C     ld a,(FlagsSave)
+0217   9348             ;| or %00001100		; make sure calcs and texts are selected
+0218   9348 FD 77 21     ld (iy+SelectFlags),a
+0219   934B             
+0220   934B 21 29 8E     ld hl,plotsscreen
+0221   934E 11 65 82     ld de,savesscreen
+0222   9351 01 00 03     ld bc,768
+0223   9354 ED B0        ldir			; copy graph screen to buffer
+0224   9356             
+0225   9356             ; Start Beta
+0226   9356             BETASHELL:
+0227   9356             
+0228   9356             
+0229   9356             #include "beta3/menu.asm"
+0001+  9356             
+0002+  9356 FD CB 23 C6  set LftMenu,(iy+BetaFlags)
+0003+  935A FD CB 23 CE  set MenuInDisplay,(iy+BetaFlags)
+0004+  935E             
+0005+  935E             
+0006+  935E             
+0007+  935E             
+0008+  935E             
+0009+  935E             
+0010+  935E             
+0011+  935E             
+0012+  935E             
+0013+  935E             
+0014+  935E             
+0015+  935E CD 32 95     call DRAWMENU
+0016+  9361             
+0017+  9361 3E 01        ld a,1
+0018+  9363 32 BD 85     ld (RgtMenuCur),a
+0019+  9366             
+0020+  9366             
+0021+  9366             
+0022+  9366             
+0023+  9366             UPDATE_MENU:
+0024+  9366 CD E8 94     call DELETE_LEFT
+0025+  9369             
+0026+  9369 3E 01        ld a,1
+0027+  936B 32 BC 85     ld (LftMenuCur),a
+0028+  936E             
+0029+  936E 21 2C 06     vLocate(44,6)
+0029+  9371 22 52 82    
+0030+  9374 3E D0        ld a,$D0
+0031+  9376 FD CB 21 56  bit XText,(iy+SelectFlags)
+0032+  937A CC 48 94     call z,LOAD_EMPTY
+0033+  937D CD 7D 47     bcall(_vputmap)
+0034+  9380             
+0035+  9380 21 2C 0C     vLocate(44,12)
+0035+  9383 22 52 82    
+0036+  9386 3E D0        ld a,$D0
+0037+  9388 FD CB 21 5E  bit XCalc,(iy+SelectFlags)
+0038+  938C CC 48 94     call z,LOAD_EMPTY
+0039+  938F CD 7D 47     bcall(_vputmap)
+0040+  9392             
+0041+  9392             ;| vLocate(44,18)	; These are two extra menu items after the existing two. Now obsolete.
+0042+  9392             ;| ld a,$D0
+0043+  9392             ;| bit XScheikunde,(iy+SelectFlags)
+0044+  9392             ;| call z,LOAD_EMPTY
+0045+  9392             ;| bcall(_vputmap)
+0046+  9392             
+0047+  9392             ;| vLocate(44,24)
+0048+  9392             ;| ld a,$D0
+0049+  9392             ;| bit XNoSubject,(iy+SelectFlags)
+0050+  9392             ;| call z,LOAD_EMPTY
+0051+  9392             ;| bcall(_vputmap)
+0052+  9392             
+0053+  9392 CD 8E 42     bcall(_zeroop1)
+0054+  9395 3E 05        ld a,progobj
+0055+  9397 32 39 80     ld (op1),a
+0056+  939A CD 2A 98     call _FindBetaUp
+0057+  939D DA BF 94     jp c,NONE_FOUND
+0058+  93A0             
+0059+  93A0 CD C4 95     call OUTPUT_PROGRAM_LIST_UP
+0060+  93A3             
+0061+  93A3 FD CB 23 46  bit LftMenu,(iy+BetaFlags)
+0062+  93A7 C4 F1 94     call nz,PLACE_LEFT
+0063+  93AA             
+0064+  93AA             LMENU_LOOP:
+0065+  93AA             
+0066+  93AA CD 92 96     call _chkfindplugin
+0067+  93AD CD 28 96     call CLEAR_PROGRAM_INFO
+0068+  93B0 21 28 28     vLocate(40,40)
+0068+  93B3 22 52 82    
+0069+  93B6 2A C1 85     ld hl,(Author)
+0070+  93B9 CD 81 47     bcall(_vPuts)
+0071+  93BC             
+0072+  93BC 21 02 38     vLocate(2,56)
+0072+  93BF 22 52 82    
+0073+  93C2 21 C3 85     ld hl,Description
+0074+  93C5 CD 81 47     bcall(_vPuts)
+0075+  93C8             
+0076+  93C8             
+0077+  93C8 FD CB 23 46  bit LftMenu,(iy+BetaFlags)
+0078+  93CC CA 55 94     jp z,RMENU_LOOP
+0079+  93CF             
+0080+  93CF CD 9C 4B     bcall(_grbufcpy)
+0081+  93D2             LMENU_KEYLOOP:
+0082+  93D2 CD 94 9B     call BETAKEY
+0083+  93D5 FE 04        cp key_up
+0084+  93D7 28 0E        jr z,LEFT_UP
+0085+  93D9 FE 01        cp key_down
+0086+  93DB 28 33        jr z,LEFT_DOWN
+0087+  93DD FE 03        cp key_right
+0088+  93DF 28 6A        jr z,RIGHT_MENU
+0089+  93E1 FE 09        cp key_enter
+0090+  93E3 28 55        jr z,LEFT_ENTER
+0091+  93E5 18 EB        jr LMENU_KEYLOOP
+0092+  93E7             
+0093+  93E7             LEFT_UP:
+0094+  93E7 3A BC 85     ld a,(LftMenuCur)
+0095+  93EA FE 01        cp 1
+0096+  93EC 28 18        jr z,PLUG_UP
+0097+  93EE 3D           dec a
+0098+  93EF 32 AB 85     ld (x),a
+0099+  93F2 CD 46 98     call _FindBetaDown		; update op1
+0100+  93F5             ; jr c,LMENU_KEYLOOP		; should not be possible
+0101+  93F5 DA 93 46     jp c,_errTolTooSmall
+0102+  93F8 CD E8 94     call DELETE_LEFT
+0103+  93FB 3A AB 85     ld a,(x)
+0104+  93FE 32 BC 85     ld (LftMenuCur),a
+0105+  9401 CD F1 94     call PLACE_LEFT
+0106+  9404 18 A4        jr LMENU_LOOP
+0107+  9406             
+0108+  9406             PLUG_UP:		; scroll list up
+0109+  9406 CD 46 98     call _FindBetaDown
+0110+  9409 38 C7        jr c,LMENU_KEYLOOP
+0111+  940B CD C4 95     call OUTPUT_PROGRAM_LIST_UP
+0112+  940E 18 9A        jr LMENU_LOOP
+0113+  9410             
+0114+  9410             LEFT_DOWN:
+0115+  9410 3A BC 85     ld a,(LftMenuCur)
+0116+  9413 FE 09        cp 9
+0117+  9415 28 18        jr z,PLUG_DOWN
+0118+  9417 3C           inc a
+0119+  9418 32 AB 85     ld (x),a
+0120+  941B CD 2A 98     call _FindBetaUp
+0121+  941E 38 B2        jr c,LMENU_KEYLOOP
+0122+  9420 CD E8 94     call DELETE_LEFT
+0123+  9423 3A AB 85     ld a,(x)
+0124+  9426 32 BC 85     ld (LftMenuCur),a
+0125+  9429 CD F1 94     call PLACE_LEFT
+0126+  942C C3 AA 93     jp LMENU_LOOP
+0127+  942F             
+0128+  942F             PLUG_DOWN:
+0129+  942F CD 2A 98     call _FindBetaUp
+0130+  9432 38 9E        jr c,LMENU_KEYLOOP
+0131+  9434 CD F0 95     call OUTPUT_PROGRAM_LIST_DOWN
+0132+  9437 C3 AA 93     jp LMENU_LOOP
+0133+  943A             
+0134+  943A             LEFT_ENTER:
+0135+  943A FD CB 23 8E  res MenuInDisplay,(iy+BetaFlags)
+0136+  943E FD CB 22 5E  bit xCalc,(iy+properties)
+0137+  9442 C2 AB 98     jp nz,CALC_PLUG
+0138+  9445 CA E0 98     jp z,SIMPLE_SCROLL
+0139+  9448             
+0140+  9448             LOAD_EMPTY:
+0141+  9448 3E 06        ld a,$06
+0142+  944A C9           ret
+0143+  944B             
+0144+  944B             RIGHT_MENU:
+0145+  944B FD CB 23 86  res LftMenu,(iy+BetaFlags)
+0146+  944F CD E8 94     call DELETE_LEFT
+0147+  9452 CD 1A 95     call PLACE_RIGHT
+0148+  9455             
+0149+  9455             RMENU_LOOP:
+0150+  9455 CD 9C 4B     bcall(_grbufcpy)
+0151+  9458             
+0152+  9458             RMENU_KEYLOOP:
+0153+  9458 CD 94 9B     call BETAKEY
+0154+  945B FE 04        cp key_up
+0155+  945D 28 0E        jr z,RIGHT_UP
+0156+  945F FE 01        cp key_down
+0157+  9461 28 1F        jr z,RIGHT_DOWN
+0158+  9463 FE 02        cp key_left
+0159+  9465 28 30        jr z,LEFT_MENU
+0160+  9467 FE 09        cp key_enter
+0161+  9469 28 3F        jr z,RIGHT_ENTER
+0162+  946B 18 EB        jr RMENU_KEYLOOP
+0163+  946D             
+0164+  946D             RIGHT_UP:
+0165+  946D 3A BD 85     ld a,(RightMenuCur)
+0166+  9470 FE 01        cp 1
+0167+  9472 28 E4        jr z,RMENU_KEYLOOP
+0168+  9474 3D           dec a
+0169+  9475 F5           push af
+0170+  9476 CD 11 95     call DELETE_RIGHT
+0171+  9479 F1           pop af
+0172+  947A 32 BD 85     ld (RightMenuCur),a
+0173+  947D CD 1A 95     call PLACE_RIGHT
+0174+  9480 18 D3        jr RMENU_LOOP
+0175+  9482             
+0176+  9482             RIGHT_DOWN:
+0177+  9482 3A BD 85     ld a,(RightMenuCur)
+0178+  9485 FE 02        cp 2
+0179+  9487 28 CF        jr z,RMENU_KEYLOOP
+0180+  9489 3C           inc a
+0181+  948A F5           push af
+0182+  948B CD 11 95     call DELETE_RIGHT
+0183+  948E F1           pop af
+0184+  948F 32 BD 85     ld (RightMenuCur),a
+0185+  9492 CD 1A 95     call PLACE_RIGHT
+0186+  9495 18 BE        jr RMENU_LOOP
+0187+  9497             
+0188+  9497             LEFT_MENU:
+0189+  9497 3A BC 85     ld a,(LeftMenuCur)
+0190+  949A A7           and a
+0191+  949B 28 BB        jr z,RMENU_KEYLOOP
+0192+  949D              
+0193+  949D FD CB 23 C6  set LftMenu,(iy+BetaFlags)
+0194+  94A1 CD 11 95     call DELETE_RIGHT
+0195+  94A4 CD F1 94     call PLACE_LEFT
+0196+  94A7 C3 AA 93     jp LMENU_LOOP
+0197+  94AA             
+0198+  94AA             RIGHT_ENTER:
+0199+  94AA 3A BD 85     ld a,(RightMenuCur)
+0200+  94AD             
+0201+  94AD             ;| ld b,%10000000		; Wiskunde
+0202+  94AD             ;| cp 1
+0203+  94AD             ;| jr z,XOR_IT
+0204+  94AD             
+0205+  94AD             ;| ld b,%01000000		; Natuurkunde
+0206+  94AD             ;| cp 2
+0207+  94AD             ;| jr z,XOR_IT
+0208+  94AD             
+0209+  94AD             ;| ld b,%00100000		; Scheikunde
+0210+  94AD             ;| cp 3
+0211+  94AD             ;| jr z,XOR_IT
+0212+  94AD             
+0213+  94AD             ;| ld b,%00010000		; Overigen
+0214+  94AD             
+0215+  94AD 06 04        ld b,%00000100			; Text
+0216+  94AF FE 01        cp 1
+0217+  94B1 28 02        jr z,XOR_IT
+0218+  94B3             
+0219+  94B3 06 08        ld b,%00001000			; Calc
+0220+  94B5             XOR_IT:
+0221+  94B5 78           ld a,b
+0222+  94B6 FD AE 21     xor (iy+SelectFlags)
+0223+  94B9 FD 77 21     ld (iy+SelectFlags),a
+0224+  94BC C3 66 93     jp UPDATE_MENU
+0225+  94BF             
+0226+  94BF             NONE_FOUND:
+0227+  94BF 3A BC 85     ld a,(LftMenuCur)
+0228+  94C2 A7           and a
+0229+  94C3 28 93        jr z,RMENU_KEYLOOP
+0230+  94C5 CD 1C 96     call CLEAR_PROGRAM_LIST
+0231+  94C8 CD 28 96     call CLEAR_PROGRAM_INFO
+0232+  94CB 21 06 01     Text(6,1,NONE_TXT)
+0232+  94CE 22 52 82    
+0232+  94D1 21 AB 9C    
+0232+  94D4 CD 81 47    
+0233+  94D7              
+0234+  94D7 FD CB 23 86  res LftMenu,(iy+BetaFlags)
+0235+  94DB CD E8 94     call DELETE_LEFT
+0236+  94DE CD 1A 95     call PLACE_RIGHT
+0237+  94E1 AF           xor a
+0238+  94E2 32 BC 85     ld (LeftMenuCur),a
+0239+  94E5 C3 55 94     jp RMENU_LOOP
+0240+  94E8             
+0241+  94E8             
+0242+  94E8             
+0243+  94E8             
+0244+  94E8             
+0245+  94E8             
+0246+  94E8             
+0247+  94E8             
+0248+  94E8             
+0249+  94E8             
+0250+  94E8             
+0251+  94E8             
+0252+  94E8             
+0253+  94E8             
+0254+  94E8             
+0255+  94E8             
+0256+  94E8             
+0257+  94E8             
+0258+  94E8             
+0259+  94E8             
+0260+  94E8             DELETE_LEFT:
+0261+  94E8 CD F9 94     call CALCULATE_LEFT
+0262+  94EB 3E 06        ld a,$06
+0263+  94ED CD 7D 47     bcall(_vputmap)
+0264+  94F0 C9           ret
+0265+  94F1             
+0266+  94F1             PLACE_LEFT:
+0267+  94F1 CD F9 94     call CALCULATE_LEFT
+0268+  94F4 3E 05        ld a,$05
+0269+  94F6 CD 7D 47     bcall(_vputmap)
+0270+  94F9             
+0271+  94F9             CALCULATE_LEFT:
+0272+  94F9 3A BC 85     ld a,(LeftMenuCur)
+0273+  94FC A7           and a
+0274+  94FD 28 10        jr z,CALCULATE_INVALID
+0275+  94FF 6F           ld l,a
+0276+  9500 26 06        ld h,6
+0277+  9502 CD 82 43     bcall(_htimesl)
+0278+  9505 7D           ld a,l
+0279+  9506 D6 05        sub 5
+0280+  9508 67           ld h,a
+0281+  9509 2E 02        ld l,2
+0282+  950B 22 52 82     ld (pencol),hl
+0283+  950E C9           ret
+0284+  950F             
+0285+  950F             CALCULATE_INVALID:
+0286+  950F E1           pop hl
+0287+  9510 C9           ret
+0288+  9511             
+0289+  9511             DELETE_RIGHT:
+0290+  9511 CD 22 95     call CALCULATE_RIGHT
+0291+  9514 3E 06        ld a,$06
+0292+  9516 CD 7D 47     bcall(_vputmap)
+0293+  9519 C9           ret
+0294+  951A             
+0295+  951A             PLACE_RIGHT:
+0296+  951A CD 22 95     call CALCULATE_RIGHT
+0297+  951D 3E 05        ld a,$05
+0298+  951F CD 7D 47     bcall(_vputmap)
+0299+  9522             
+0300+  9522             CALCULATE_RIGHT:
+0301+  9522 3A BD 85     ld a,(RightMenuCur)
+0302+  9525 6F           ld l,a
+0303+  9526 26 06        ld h,6
+0304+  9528 CD 82 43     bcall(_htimesl)
+0305+  952B 65           ld h,l
+0306+  952C 2E 28        ld l,40
+0307+  952E 22 52 82     ld (pencol),hl
+0308+  9531 C9           ret
+0309+  9532              
+0310+  9532             
+0311+  9532             DRAWMENU:
+0312+  9532 CD 5B 51     bcall(_GrBufClr)
+0313+  9535             
+0314+  9535             ; Vertical Lines
+0315+  9535 26 01        LineOn
+0316+  9537 01 3F 00     Line(00,00,00,63)
+0316+  953A 11 00 00    
+0316+  953D CD E4 4A    
+0317+  9540 01 3F 26     Line(38,00,38,55)
+0317+  9543 11 08 26    
+0317+  9546 CD E4 4A    
+0318+  9549 01 3A 5F     Line(95,05,95,63)
+0318+  954C 11 00 5F    
+0318+  954F CD E4 4A    
+0319+  9552             
+0320+  9552             ; Horizontal Lines
+0321+  9552 26 02        LineChange
+0322+  9554 01 3F 00     Line(00,00,38,00)
+0322+  9557 11 3F 26    
+0322+  955A CD E4 4A    
+0323+  955D 01 3A 26     Line(38,05,95,05)
+0323+  9560 11 3A 5F    
+0323+  9563 CD E4 4A    
+0324+  9566 01 20 26     Line(38,31,95,31)
+0324+  9569 11 20 5F    
+0324+  956C CD E4 4A    
+0325+  956F 01 18 26     Line(38,39,95,39)
+0325+  9572 11 18 5F    
+0325+  9575 CD E4 4A    
+0326+  9578 01 10 26     Line(38,47,95,47)
+0326+  957B 11 10 5F    
+0326+  957E CD E4 4A    
+0327+  9581 01 08 00     Line(00,55,95,55)
+0327+  9584 11 08 5F    
+0327+  9587 CD E4 4A    
+0328+  958A 01 00 00     Line(00,63,95,63)
+0328+  958D 11 00 5F    
+0328+  9590 CD E4 4A    
+0329+  9593             
+0330+  9593             
+0331+  9593             
+0332+  9593             
+0333+  9593             ; Square(0,0,38,0)
+0334+  9593             ; Square(38,5,94,5)
+0335+  9593             ; Square(38,31,94,31)
+0336+  9593             ; Square(38,39,94,39)
+0337+  9593             ; Square(38,47,94,47)
+0338+  9593             ; Square(0,55,94,55)
+0339+  9593             
+0340+  9593             ; Square(0,0,0,63)
+0341+  9593             ; Square(38,0,38,55)
+0342+  9593             ; Square(94,5,94,63)
+0343+  9593             ; Square(0,63,94,63)
+0344+  9593             
+0345+  9593 21 30 06     Text(48,6,TEXT_TXT)
+0345+  9596 22 52 82    
+0345+  9599 21 99 9C    
+0345+  959C CD 81 47    
+0346+  959F 21 30 0C     Text(48,12,CALC_TXT)
+0346+  95A2 22 52 82    
+0346+  95A5 21 9F 9C    
+0346+  95A8 CD 81 47    
+0347+  95AB 21 28 20     Text(40,32,AUTHOR_TXT)
+0347+  95AE 22 52 82    
+0347+  95B1 21 B2 9C    
+0347+  95B4 CD 81 47    
+0348+  95B7 21 28 30     Text(40,48,DESCRIPTION_TXT)
+0348+  95BA 22 52 82    
+0348+  95BD 21 BA 9C    
+0348+  95C0 CD 81 47    
+0349+  95C3             
+0350+  95C3 C9           ret
+0351+  95C4             
+0352+  95C4             
+0353+  95C4             OUTPUT_PROGRAM_LIST_UP:
+0354+  95C4 CD 1C 96     call CLEAR_PROGRAM_LIST
+0355+  95C7             
+0356+  95C7             
+0357+  95C7 CD 6E 41     bcall(_op1toop4)
+0358+  95CA 06 09        ld b,9		; there are 9 slots in the menu
+0359+  95CC             UP_PROGRAM_LIST_LOOP:
+0360+  95CC C5           push bc
+0361+  95CD 60           ld h,b			; 55-(b*6)->penrow
+0362+  95CE 2E 06        ld l,6
+0363+  95D0 CD 82 43     bcall(_htimesl)
+0364+  95D3 3E 37        ld a,55
+0365+  95D5 95           sub l
+0366+  95D6 67           ld h,a
+0367+  95D7 2E 06        ld l,6
+0368+  95D9 22 52 82     ld (pencol),hl
+0369+  95DC             
+0370+  95DC 21 3A 80     ld hl,op1+1
+0371+  95DF CD 81 47     bcall(_vputs)		; outputs plugin name
+0372+  95E2 CD 2A 98     call _FindBetaUp	; find next Plugin
+0373+  95E5 38 04        jr c,UP_PROGRAM_LIST_LOOP_END
+0374+  95E7 C1           pop bc
+0375+  95E8 10 E2        djnz UP_PROGRAM_LIST_LOOP
+0376+  95EA C5           push bc
+0377+  95EB             UP_PROGRAM_LIST_LOOP_END:
+0378+  95EB C1           pop bc
+0379+  95EC CD 9A 41     bcall(_op4toop1)
+0380+  95EF C9           ret
+0381+  95F0             
+0382+  95F0             
+0383+  95F0             
+0384+  95F0             
+0385+  95F0             OUTPUT_PROGRAM_LIST_DOWN:
+0386+  95F0 CD 1C 96     call CLEAR_PROGRAM_LIST
+0387+  95F3             
+0388+  95F3 CD 6E 41     bcall(_op1toop4)
+0389+  95F6 06 09        ld b,9		; there are 9 slots in the menu
+0390+  95F8             DN_PROGRAM_LIST_LOOP:
+0391+  95F8 C5           push bc
+0392+  95F9 60           ld h,b			; (b*6)-5->penrow
+0393+  95FA 2E 06        ld l,6
+0394+  95FC CD 82 43     bcall(_htimesl)
+0395+  95FF 7D           ld a,l
+0396+  9600 D6 05        sub 5
+0397+  9602 67           ld h,a
+0398+  9603 2E 06        ld l,6
+0399+  9605 22 52 82     ld (pencol),hl
+0400+  9608             
+0401+  9608 21 3A 80     ld hl,op1+1
+0402+  960B CD 81 47     bcall(_vputs)		; outputs plugin name
+0403+  960E CD 46 98     call _FindBetaDown	; Find next Plugin
+0404+  9611 38 04        jr c,DN_PROGRAM_LIST_LOOP_END
+0405+  9613 C1           pop bc
+0406+  9614 10 E2        djnz DN_PROGRAM_LIST_LOOP
+0407+  9616 C5           push bc
+0408+  9617             DN_PROGRAM_LIST_LOOP_END:
+0409+  9617 C1           pop bc
+0410+  9618 CD 9A 41     bcall(_op4toop1)
+0411+  961B C9           ret
+0412+  961C             
+0413+  961C             CLEAR_PROGRAM_LIST:
+0414+  961C 26 00        LineOff
+0415+  961E 01 01 06     Square(6,1,37,54)	; clear program list
+0415+  9621 11 36 25    
+0415+  9624 CD C0 9B    
+0416+  9627 C9           ret
+0417+  9628             
+0418+  9628             CLEAR_PROGRAM_INFO:
+0419+  9628 26 00        LineOff
+0420+  962A 01 38 02     Square(2,56,93,61)	; clear author
+0420+  962D 11 3D 5D    
+0420+  9630 CD C0 9B    
+0421+  9633 01 28 28     Square(40,40,93,45)	; clear description
+0421+  9636 11 2D 5D    
+0421+  9639 CD C0 9B    
+0422+  963C C9           ret
+0423+  963D             
+0424+  963D             
+0425+  963D             
+0426+  963D             
+0230   963D             
+0231   963D             
+0232   963D             
+0233   963D             
+0234   963D             _ChkFindPlug:
+0235   963D             ; _ChkfindPlugin checks the validity of a plugin which name is in op1
+0236   963D             ; Input:
+0237   963D             ; Op1=name of plugin to check
+0238   963D             
+0239   963D             ; Output:
+0240   963D             
+0241   963D             ; carry flag set if invalid plugin
+0242   963D             ; carry flag reset if valid plugin
+0243   963D             ; (iy+Properties)=Plugin flags
+0244   963D             
+0245   963D CD 37 9C     call file.open
+0246   9640 DA 90 96     jp c,CS_INVALID
+0247   9643 AF           xor a
+0248   9644 32 42 80     ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
+0249   9647             
+0250   9647 CD 24 98     call CHK_INCCURSOR
+0251   964A FE D9        cp $D9			; STOP
+0252   964C 28 07        jr z,CS_TEXTPLUGIN
+0253   964E FE 3F        cp $3F			; \n
+0254   9650 28 15        jr z,CS_CALCPLUGIN
+0255   9652 C3 1D 98     jp INVALID2
+0256   9655             
+0257   9655             CS_TEXTPLUGIN:
+0258   9655 CD 24 98     call CHK_INCCURSOR
+0259   9658 FE 3F        cp $3F			; \n
+0260   965A 20 34        jr nz,CS_INVALID
+0261   965C             
+0262   965C CD 24 98     call CHK_INCCURSOR
+0263   965F F6 04        or %00000100		; Make sure text flag is set
+0264   9661 FD 77 22     ld (iy+properties),a
+0265   9664             
+0266   9664 37           rcf
+0266   9665 3F          
+0267   9666 C9           ret
+0268   9667             
+0269   9667             CS_CALCPLUGIN:
+0270   9667 CD 24 98     call CHK_INCCURSOR
+0271   966A FE 2A        cp $2A
+0272   966C C2 1D 98     jp nz,INVALID2
+0273   966F             
+0274   966F CD 24 98     call CHK_INCCURSOR
+0275   9672 21 01 00     ld hl,1
+0276   9675 FE 29        cp $29				; space
+0277   9677 28 05        jr z,CS_SKIP_ONE
+0278   9679 FE 3F        cp $3F
+0279   967B 28 0C        jr z,CS_SKIP_NONE
+0280   967D             CS_SKIP_TWO:
+0281   967D 23           inc hl
+0282   967E             CS_SKIP_ONE:
+0283   967E CD 70 9C     call file.skip
+0284   9681 CD 53 9C     call file.readByte
+0285   9684 FE 3F        cp $3F
+0286   9686 C2 1D 98     jp nz,INVALID2
+0287   9689             CS_SKIP_NONE:
+0288   9689 FD CB 22 DE  set xCalc,(iy+Properties)	; Make sure calc flag is set
+0289   968D             
+0290   968D 37           rcf
+0290   968E 3F          
+0291   968F C9           ret
+0292   9690             
+0293   9690             ;| call CHK_INCCURSOR
+0294   9690             ;| cp $2A			; "
+0295   9690             ;| jp nz,INVALID2
+0296   9690             
+0297   9690             ;| call CHK_INCCURSOR
+0298   9690             ;| cp $29			; space
+0299   9690             ;| jr z,CS_NO_OK
+0300   9690             ;| cp 'W'
+0301   9690             ;| jr z,CS_WI
+0302   9690             ;| cp 'N'
+0303   9690             ;| jr z,CS_NA
+0304   9690             ;| cp 'S'
+0305   9690             ;| jr z,CS_SK
+0306   9690             ;| jp INVALID2
+0307   9690             ;|CS_WI:
+0308   9690             ;| call CHK_INCCURSOR
+0309   9690             ;| cp 'I'
+0310   9690             ;| ld a,%10001000
+0311   9690             ;| jr z,CS_OK
+0312   9690             ;| jp INVALID2
+0313   9690             ;|CS_NA:
+0314   9690             ;| call CHK_INCCURSOR
+0315   9690             ;| cp 'A'
+0316   9690             ;| ld a,%01001000
+0317   9690             ;| jr z,CS_OK
+0318   9690             ;| jp INVALID2
+0319   9690             ;|CS_SK:
+0320   9690             ;| call CHK_INCCURSOR
+0321   9690             ;| cp 'K'
+0322   9690             ;| ld a,%00101000
+0323   9690             ;| jr z,CS_OK
+0324   9690             ;| jp INVALID2
+0325   9690             ;|CS_NO_OK:		; no subject
+0326   9690             ;| ld a,%00011000
+0327   9690             
+0328   9690             ;|CS_OK:
+0329   9690             ;| ld (iy+Properties),a
+0330   9690             
+0331   9690             
+0332   9690             CS_INVALID:
+0333   9690             SCF:
+0334   9690 37           scf		; set carry flag
+0335   9691 C9           ret
+0336   9692             
+0337   9692             
+0338   9692             
+0339   9692             
+0340   9692             _ChkFindPlugin:
+0341   9692             ; _ChkfindPlugin checks the validity of a plugin which name is in op1
+0342   9692             ; and returns its flags and adress
+0343   9692             ; Input:
+0344   9692             ; Op1=name of plugin to detect
+0345   9692             
+0346   9692             ; Output:
+0347   9692             ; a: Plugin flags
+0348   9692             ; carry flag set if invalid plugin
+0349   9692             ; carry flag reset if valid plugin
+0350   9692             ; (iy+Properties)=Plugin flags
+0351   9692             ; (Current_adress)=pointer to plugin start in RAM
+0352   9692             ; Description=Program Description
+0353   9692             ; (Author)=Author
+0354   9692             
+0355   9692 CD 37 9C     call file.open
+0356   9695 DA 1D 98     jp c,INVALID2
+0357   9698 AF           xor a
+0358   9699 32 42 80     ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
+0359   969C             
+0360   969C CD 24 98     call CHK_INCCURSOR
+0361   969F FE D9        cp $D9			; Stop
+0362   96A1 28 08        jr z,TEXTPLUGIN
+0363   96A3 FE 3F        cp $3F			; \n
+0364   96A5 CA 59 97     jp z,CALCPLUGIN
+0365   96A8 C3 1D 98     jp INVALID2
+0366   96AB             
+0367   96AB             TEXTPLUGIN:
+0368   96AB CD 24 98     call CHK_INCCURSOR
+0369   96AE FE 3F        cp $3F			; \n
+0370   96B0 C2 1D 98     jp nz,INVALID2
+0371   96B3             
+0372   96B3 CD 24 98     call CHK_INCCURSOR
+0373   96B6 F6 04        or %00000100		; Make sure text flag is set, we don't really care for any actual settings in this byte, but it may be used again in the future
+0374   96B8 FD 77 22     ld (iy+Properties),a
+0375   96BB             
+0376   96BB              ; Search for Description
+0377   96BB             
+0378   96BB AF           xor a
+0379   96BC 32 BE 85     ld (String_length),a
+0380   96BF 21 C3 85     ld hl,String_temp
+0381   96C2 22 BF 85     ld (String_adress),hl
+0382   96C5             
+0383   96C5 CD 53 9C     call file.readByte
+0384   96C8 38 39        jr c,TXT_TITLE_LOOP_END
+0385   96CA FE F8        cp tag_title
+0386   96CC 20 35        jr nz,TXT_TITLE_LOOP_END
+0387   96CE             
+0388   96CE             TXT_TITLE_LOOP:
+0389   96CE CD 53 9C     call file.readByte
+0390   96D1 38 30        jr c,TXT_TITLE_LOOP_END
+0391   96D3 FE F8        cp tag_title
+0392   96D5 28 2C        jr z,TXT_TITLE_LOOP_END
+0393   96D7             
+0394   96D7 F5           push af
+0395   96D8 6F           ld l,a
+0396   96D9 26 08        ld h,8
+0397   96DB CD 82 43     bcall(_htimesl)
+0398   96DE CD 6C 4A     bcall(_sFont_Len)	; calculate length
+0399   96E1 3A BE 85     ld a,(String_length)
+0400   96E4 80           add a,b		; new string length
+0401   96E5 C6 A3        add a,255-92		; Description max=92 pixels
+0402   96E7 38 10        jr c,TXT_TITLE_TOO_LONG
+0403   96E9 D6 A3        sub 255-92
+0404   96EB 32 BE 85     ld (String_length),a
+0405   96EE             
+0406   96EE F1           pop af
+0407   96EF 2A BF 85     ld hl,(String_adress)
+0408   96F2 77           ld (hl),a
+0409   96F3 23           inc hl
+0410   96F4 22 BF 85     ld (String_adress),hl
+0411   96F7             
+0412   96F7 18 D5        jr TXT_TITLE_LOOP
+0413   96F9             
+0414   96F9             TXT_TITLE_TOO_LONG:
+0415   96F9 F1           pop af			; cleans the stack a is not used here (we already known the length is too long)
+0416   96FA             TXT_TITLE_TOO_LONG_LOOP:
+0417   96FA CD 53 9C     call file.readByte
+0418   96FD 38 04        jr c,TXT_TITLE_LOOP_END	; EOF
+0419   96FF FE F8        cp tag_title
+0420   9701 20 F7        jr nz,TXT_TITLE_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
+0421   9703             
+0422   9703             TXT_TITLE_LOOP_END:
+0423   9703 2A BF 85     ld hl,(String_adress)
+0424   9706 36 00        ld (hl),0		; it's now a zero-terminated string
+0425   9708 23           inc hl
+0426   9709 22 BF 85     ld (String_adress),hl
+0427   970C 22 C1 85     ld (Author),hl
+0428   970F             
+0429   970F             
+0430   970F             TXT_AUTHOR:
+0431   970F             
+0432   970F              ; Search for Author
+0433   970F             
+0434   970F AF           xor a
+0435   9710 32 BE 85     ld (String_length),a
+0436   9713 CD 53 9C     call file.readByte
+0437   9716 38 39        jr c,TXT_AUTHOR_LOOP_END
+0438   9718 FE F7        cp tag_author
+0439   971A 20 35        jr nz,TXT_AUTHOR_LOOP_END
+0440   971C             
+0441   971C             TXT_AUTHOR_LOOP:
+0442   971C CD 53 9C     call file.readByte
+0443   971F 38 30        jr c,TXT_AUTHOR_LOOP_END
+0444   9721 FE F7        cp tag_author
+0445   9723 28 2C        jr z,TXT_AUTHOR_LOOP_END
+0446   9725             
+0447   9725 F5           push af
+0448   9726 6F           ld l,a
+0449   9727 26 08        ld h,8
+0450   9729 CD 82 43     bcall(_htimesl)
+0451   972C CD 6C 4A     bcall(_sFont_Len)	; calculate length
+0452   972F 3A BE 85     ld a,(String_length)
+0453   9732 80           add a,b		; new string length
+0454   9733 C6 C9        add a,255-54		; Description max=54 pixels
+0455   9735 38 10        jr c,TXT_AUTHOR_TOO_LONG
+0456   9737 D6 C9        sub 255-54
+0457   9739 32 BE 85     ld (String_length),a
+0458   973C             
+0459   973C F1           pop af
+0460   973D 2A BF 85     ld hl,(String_adress)
+0461   9740 77           ld (hl),a
+0462   9741 23           inc hl
+0463   9742 22 BF 85     ld (String_adress),hl
+0464   9745             
+0465   9745 18 D5        jr TXT_AUTHOR_LOOP
+0466   9747             
+0467   9747             TXT_AUTHOR_TOO_LONG:
+0468   9747 F1           pop af			; cleans the stack a is not used here (we already known the length is too long)
+0469   9748             TXT_AUTHOR_TOO_LONG_LOOP:
+0470   9748 CD 53 9C     call file.readByte
+0471   974B 38 04        jr c,TXT_AUTHOR_LOOP_END	; EOF
+0472   974D FE F7        cp tag_author
+0473   974F 20 F7        jr nz,TXT_AUTHOR_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
+0474   9751             
+0475   9751             TXT_AUTHOR_LOOP_END:
+0476   9751 2A BF 85     ld hl,(String_adress)
+0477   9754 36 00        ld (hl),0		; it's now a zero-terminated string
+0478   9756             
+0479   9756 37           rcf
+0479   9757 3F          
+0480   9758 C9           ret
+0481   9759             
+0482   9759             
+0483   9759             
+0484   9759             
+0485   9759             CALCPLUGIN:
+0486   9759 CD 24 98     call CHK_INCCURSOR
+0487   975C FE 2A        cp $2A
+0488   975E C2 1D 98     jp nz,INVALID2
+0489   9761             
+0490   9761 CD 24 98     call CHK_INCCURSOR
+0491   9764 FE 29        cp $29				; space
+0492   9766 28 07        jr z,SKIP_ONE
+0493   9768 FE 3F        cp $3F
+0494   976A 28 06        jr z,SKIP_NONE
+0495   976C             SKIP_TWO:
+0496   976C CD 24 98     call CHK_INCCURSOR
+0497   976F             SKIP_ONE:
+0498   976F CD 24 98     call CHK_INCCURSOR
+0499   9772             SKIP_NONE:
+0500   9772 FE 3F        cp $3F
+0501   9774 C2 1D 98     jp nz,INVALID2
+0502   9777             
+0503   9777 FD CB 22 DE  set xCalc,(iy+Properties)	; Make sure calc flag is set
+0504   977B             
+0505   977B             ;| call CHK_INCCURSOR
+0506   977B             ;| cp $2A			; "
+0507   977B             ;| jp nz,INVALID2
+0508   977B             ;|
+0509   977B             ;| call CHK_INCCURSOR
+0510   977B             ;| cp $29			; space
+0511   977B             ;| jr z,SU_NO_OK
+0512   977B             ;| cp 'W'
+0513   977B             ;| jr z,SU_WI
+0514   977B             ;| cp 'N'
+0515   977B             ;| jr z,SU_NA
+0516   977B             ;| cp 'S'
+0517   977B             ;| jr z,SU_SK
+0518   977B             ;| jp INVALID2
+0519   977B             ;|SU_WI:
+0520   977B             ;| call CHK_INCCURSOR
+0521   977B             ;| cp 'I'
+0522   977B             ;| ld a,%10001000
+0523   977B             ;| jr z,OKOK
+0524   977B             ;| jp INVALID2
+0525   977B             ;|SU_NA:
+0526   977B             ;| call CHK_INCCURSOR
+0527   977B             ;| cp 'A'
+0528   977B             ;| ld a,%01001000
+0529   977B             ;| jr z,OKOK
+0530   977B             ;| jp INVALID2
+0531   977B             ;|SU_SK:
+0532   977B             ;| call CHK_INCCURSOR
+0533   977B             ;| cp 'K'
+0534   977B             ;| ld a,%00101000
+0535   977B             ;| jr z,OKOK
+0536   977B             ;| jp INVALID2
+0537   977B             ;|SU_NO_OK:		; no subject
+0538   977B             ;| ld a,%00011000
+0539   977B             
+0540   977B             ;|OKOK:
+0541   977B             
+0542   977B             
+0543   977B             
+0544   977B             
+0545   977B             
+0546   977B              ; Search for Description
+0547   977B             
+0548   977B AF           xor a
+0549   977C 32 BE 85     ld (String_length),a
+0550   977F 21 C3 85     ld hl,String_temp
+0551   9782 22 BF 85     ld (String_adress),hl
+0552   9785             
+0553   9785 CD 53 9C     call file.readByte
+0554   9788 38 3C        jr c,CLC_TITLE_LOOP_END
+0555   978A FE 2A        cp $2A
+0556   978C 20 38        jr nz,CLC_TITLE_LOOP_END
+0557   978E             
+0558   978E             CLC_TITLE_LOOP:
+0559   978E CD 53 9C     call file.readByte
+0560   9791 38 33        jr c,CLC_TITLE_LOOP_END
+0561   9793 FE 3F        cp $3F
+0562   9795 28 2F        jr z,CLC_TITLE_LOOP_END
+0563   9797             
+0564   9797 F5           push af
+0565   9798 6F           ld l,a
+0566   9799 26 08        ld h,8
+0567   979B CD 82 43     bcall(_htimesl)
+0568   979E CD 6C 4A     bcall(_sFont_Len)	; calculate length
+0569   97A1 3A BE 85     ld a,(String_length)
+0570   97A4 80           add a,b		; new string length
+0571   97A5 C6 A3        add a,255-92		; Description max=92 pixels
+0572   97A7 E1           pop hl			; af pops out as hl because it causes a return error if title too long (don't pop as af because carry flag will change)
+0573   97A8 38 11        jr c,CLC_TITLE_TOO_LONG
+0574   97AA E5           push hl
+0575   97AB D6 A3        sub 255-92
+0576   97AD 32 BE 85     ld (String_length),a
+0577   97B0             
+0578   97B0 F1           pop af
+0579   97B1 2A BF 85     ld hl,(String_adress)
+0580   97B4 77           ld (hl),a
+0581   97B5 23           inc hl
+0582   97B6 22 BF 85     ld (String_adress),hl
+0583   97B9             
+0584   97B9 18 D3        jr CLC_TITLE_LOOP
+0585   97BB             
+0586   97BB             CLC_TITLE_TOO_LONG:
+0587   97BB CD 53 9C     call file.readByte
+0588   97BE 38 06        jr c,CLC_TITLE_LOOP_END
+0589   97C0 FE 3F        cp $3F
+0590   97C2 28 02        jr z,CLC_TITLE_LOOP_END
+0591   97C4 18 F5        jr CLC_TITLE_TOO_LONG
+0592   97C6             
+0593   97C6             CLC_TITLE_LOOP_END:
+0594   97C6 2A BF 85     ld hl,(String_adress)
+0595   97C9 36 00        ld (hl),0		; it's now a zero-terminated string
+0596   97CB 23           inc hl
+0597   97CC 22 BF 85     ld (String_adress),hl
+0598   97CF 22 C1 85     ld (Author),hl
+0599   97D2             
+0600   97D2             
+0601   97D2             
+0602   97D2             
+0603   97D2             
+0604   97D2             
+0605   97D2             
+0606   97D2             
+0607   97D2             
+0608   97D2             
+0609   97D2             
+0610   97D2             CLC_AUTHOR:
+0611   97D2             
+0612   97D2              ; Search for Author
+0613   97D2             
+0614   97D2 AF           xor a
+0615   97D3 32 BE 85     ld (String_length),a
+0616   97D6 CD 53 9C     call file.readByte
+0617   97D9 38 3A        jr c,CLC_AUTHOR_LOOP_END
+0618   97DB FE 2A        cp $2A
+0619   97DD 20 36        jr nz,CLC_AUTHOR_LOOP_END
+0620   97DF             
+0621   97DF             CLC_AUTHOR_LOOP:
+0622   97DF CD 53 9C     call file.readByte
+0623   97E2 38 31        jr c,CLC_AUTHOR_LOOP_END
+0624   97E4 FE 3F        cp $3F
+0625   97E6 28 2D        jr z,CLC_AUTHOR_LOOP_END
+0626   97E8             
+0627   97E8 F5           push af
+0628   97E9 6F           ld l,a
+0629   97EA 26 08        ld h,8
+0630   97EC CD 82 43     bcall(_htimesl)
+0631   97EF CD 6C 4A     bcall(_sFont_Len)	; calculate length
+0632   97F2 3A BE 85     ld a,(String_length)
+0633   97F5 80           add a,b		; new string length
+0634   97F6 C6 C9        add a,255-54		; Description max=54 pixels
+0635   97F8 38 10        jr c,CLC_AUTHOR_TOO_LONG
+0636   97FA D6 C9        sub 255-54
+0637   97FC 32 BE 85     ld (String_length),a
+0638   97FF             
+0639   97FF F1           pop af
+0640   9800 2A BF 85     ld hl,(String_adress)
+0641   9803 77           ld (hl),a
+0642   9804 23           inc hl
+0643   9805 22 BF 85     ld (String_adress),hl
+0644   9808             
+0645   9808 18 D5        jr CLC_AUTHOR_LOOP
+0646   980A             
+0647   980A             CLC_AUTHOR_TOO_LONG:
+0648   980A CD 53 9C     call file.readByte
+0649   980D 38 06        jr c,CLC_AUTHOR_LOOP_END
+0650   980F FE 3F        cp $3F
+0651   9811 28 02        jr z,CLC_AUTHOR_LOOP_END
+0652   9813 18 F5        jr CLC_AUTHOR_TOO_LONG
+0653   9815             
+0654   9815             CLC_AUTHOR_LOOP_END:
+0655   9815 2A BF 85     ld hl,(String_adress)
+0656   9818 36 00        ld (hl),0		; it's now a zero-terminated string
+0657   981A             
+0658   981A 37           rcf
+0658   981B 3F          
+0659   981C C9           ret
+0660   981D             
+0661   981D             
+0662   981D             
+0663   981D             
+0664   981D             
+0665   981D             
+0666   981D             
+0667   981D             INVALID2:
+0668   981D AF           xor a
+0669   981E FD 77 22     ld (iy+Properties),a
+0670   9821 37           scf		; set carry flag
+0671   9822 E1           pop hl
+0672   9823 C9           ret
+0673   9824             
+0674   9824             CHK_INCCURSOR:
+0675   9824 CD 53 9C     call file.readByte
+0676   9827 38 F4        jr c,INVALID2
+0677   9829 C9           ret
+0678   982A             
+0679   982A             
+0680   982A             
+0681   982A             
+0682   982A             
+0683   982A             
+0684   982A             
+0685   982A             
+0686   982A             
+0687   982A             
+0688   982A             _FindBetaUp:
+0689   982A             ; _FindBetaUp finds alphabetically the next valid beta plugin
+0690   982A             ; Input:
+0691   982A             ; Op1: previous program name
+0692   982A             
+0693   982A             ; Output:
+0694   982A             ; OP1: name of next plugin
+0695   982A             ; a: Plugin flags
+0696   982A             ; carry flag set if this was the last plugin
+0697   982A             ; carry flag reset this was not the last plugin
+0698   982A             ; (iy+Properties)=Plugin flags
+0699   982A             ; (Current_adress)=pointer to plugin start in RAM
+0700   982A             
+0701   982A 21 9F 85     ld hl,Cursor_adress
+0702   982D 11 A5 85     ld de,Cursor_adress2
+0703   9830 01 06 00     ld bc,6
+0704   9833 ED B0        ldir
+0705   9835 CD BE 41     bcall(_op1toop5)
+0706   9838             FindBetaUp:
+0707   9838 CD BA 41     bcall(_op1toop6)
+0708   983B CD 1A 4E     bcall(_findalphaup)
+0709   983E 21 38 98     ld hl,FindBetaUp		; Needs to be saved in case of invalid plugins
+0710   9841 22 9C 85     ld (up_or_down),hl
+0711   9844 18 1A        jr FINDBeta
+0712   9846             
+0713   9846             _FindBetaDown:
+0714   9846             ; _FindBetaDown finds alphabetically the previous valid beta plugin
+0715   9846             ; Input:
+0716   9846             ; Op1: current program name
+0717   9846             
+0718   9846             ; Output:
+0719   9846             ; OP1: name of previous plugin
+0720   9846             ; carry flag set if this was the first plugin
+0721   9846             ; carry flag reset this was not the first plugin
+0722   9846             
+0723   9846 CD BE 41     bcall(_op1toop5)
+0724   9849 21 9F 85     ld hl,Cursor_adress
+0725   984C 11 A5 85     ld de,Cursor_adress2
+0726   984F 01 06 00     ld bc,6
+0727   9852 ED B0        ldir
+0728   9854             FindBetaDown:
+0729   9854 CD BA 41     bcall(_Op1toop6)
+0730   9857 CD 1E 4E     bcall(_findalphadn)
+0731   985A 21 54 98     ld hl,FindBetaDown		; Needs to be saved in case of invalid plugins
+0732   985D 22 9C 85     ld (up_or_down),hl
+0733   9860             
+0734   9860             FINDBeta:
+0735   9860 D9           exx
+0736   9861 08           ex af,af'
+0737   9862 CD 92 41     bcall(_op6toop2)
+0738   9865 CD AF 9B     call cpop1op2
+0739   9868 20 10        jr nz,NO_BUG
+0740   986A             
+0741   986A             FindBeta_Invalid:
+0742   986A CD 9E 41     bcall(_op5toop1)		; restore original name
+0743   986D 21 A5 85     ld hl,Cursor_adress2		; restore original flags & adresses
+0744   9870 11 9F 85     ld de,Cursor_adress
+0745   9873 01 06 00     ld bc,6
+0746   9876 ED B0        ldir
+0747   9878 37           scf
+0748   9879 C9           ret
+0749   987A             
+0750   987A             NO_BUG:
+0751   987A D9           exx
+0752   987B 08           ex af,af'
+0753   987C             
+0754   987C CD 3D 96     call _chkfindplug
+0755   987F 38 13        jr c,INVALID
+0756   9881             
+0757   9881 FD 7E 21     ld a,(iy+selectflags)		; This code checks if this plug is what we asked for
+0758   9884 EE FF        xor %11111111
+0759   9886 47           ld b,a
+0760   9887 FD 7E 22     ld a,(iy+Properties)
+0761   988A A0           and b
+0762   988B 20 07        jr nz,INVALID
+0763   988D             
+0764   988D 23           inc hl				; hl is at the actual beginning of the plugin
+0765   988E 22 9A 85     ld (current_adress),hl
+0766   9891 37           rcf
+0766   9892 3F          
+0767   9893 C9           ret
+0768   9894             
+0769   9894             INVALID:
+0770   9894 2A 9C 85     ld hl,(up_or_down)		; _FindBetaup or _FindBetadown
+0771   9897 E5           push hl
+0772   9898 C9           ret		; jump to _FindBetaup or _FindBetadown
+0773   9899             
+0774   9899             
+0775   9899             
+0776   9899             
+0777   9899             
+0778   9899             
+0779   9899             
+0780   9899             
+0781   9899             
+0782   9899             
+0783   9899             
+0784   9899             
+0785   9899             
+0786   9899             
+0787   9899             
+0788   9899             
+0789   9899             
+0790   9899             
+0791   9899             
+0792   9899             
+0793   9899             
+0794   9899             OPEN_PLUGIN:
+0795   9899 CD 9E 41     bcall(_op5toop1)		; op5= first plugin in the list
+0796   989C CD 92 96     call _chkfindplugin		; Gets plugin settings
+0797   989F             
+0798   989F FD CB 22 56  bit XText,(iy+Properties)
+0799   98A3 20 3B        jr nz,SIMPLE_SCROLL		; goto scroll engine for text plugins
+0800   98A5 FD CB 22 5E  bit XCalc,(iy+Properties)
+0801   98A9 20 00        jr nz,CALC_PLUG		; goto basic engine for programs
+0802   98AB             
+0803   98AB             
+0804   98AB             
+0805   98AB             
+0806   98AB             
+0807   98AB             
+0808   98AB             
+0809   98AB             ;;
+0810   98AB             ;;		; Start calculator
+0811   98AB             ;;
+0812   98AB             
+0813   98AB             
+0814   98AB             CALC_PLUG:
+0815   98AB             
+0816   98AB CD 8E 41     bcall(_op1toop2)
+0817   98AE CD E7 9B     call SAVE_SELECT_FLAGS
+0818   98B1 CD C2 41     bcall(_op2toop1)
+0819   98B4             
+0820   98B4 FD CB 14 BE  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+0821   98B8~            #IFDEF TI83P
+0822   98B8~             res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+0823   98B8             #ENDIF
+0824   98B8             
+0825   98B8 FD CB 09 A6  res oninterrupt,(iy+onflags)
+0826   98BC ED 7B 8F 85  ld sp,(savesp)
+0827   98C0 CD 5B 51     bcall(_grbufclr)
+0828   98C3 21 00 00     ld hl,0
+0829   98C6 22 0C 80     ld (currow),hl
+0830   98C9 3E 20        ld a,$20
+0831   98CB CD 01 47     bcall(_putmap)
+0832   98CE CD 5D 47     bcall(_clrscrnfull)
+0833   98D1 CD 65 47     bcall(_clrtxtshd)
+0834   98D4             ; bcall(_JforceCmdnochar)		; This is the cause of the Beta NT memory bug
+0835   98D4             
+0836   98D4 FD CB 08 CE  set ProgExecuting,(iy+newDispf)
+0837   98D8 CD 8C 4E     bcall(_ParseInp)
+0838   98DB FD CB 08 8E  res progExecuting,(iy+newDispf)
+0839   98DF C9           ret
+0840   98E0             
+0841   98E0             
+0842   98E0             
+0843   98E0             
+0844   98E0             #include "beta3/scroll.asm"
+0001+  98E0             ; Copyright (C) 2006  Remy Glaser
+0002+  98E0             ; 
+0003+  98E0             ; This program is free software; you can redistribute it and/or
+0004+  98E0             ; modify it under the terms of the GNU General Public License
+0005+  98E0             ; as published by the Free Software Foundation; either version 3
+0006+  98E0             ; of the License, or (at your option) any later version.
+0007+  98E0             ; 
+0008+  98E0             ; This program is distributed in the hope that it will be useful,
+0009+  98E0             ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+0010+  98E0             ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+0011+  98E0             ; gpl-3.0.txt for more details.
+0012+  98E0             ; 
+0013+  98E0             
+0014+  98E0             SIMPLE_SCROLL:
+0015+  98E0 2A 9F 85     ld hl,(cursor_adress)
+0016+  98E3 2B           dec hl
+0017+  98E4 22 A1 85     ld (Min_adress),hl
+0018+  98E7 06 03        ld b,3
+0019+  98E9             
+0020+  98E9             
+0021+  98E9             OUTPUT_PAGE:
+0022+  98E9 CD 5B 51     bcall(_grbufclr)
+0023+  98EC AF           xor a
+0024+  98ED 32 53 82     ld (penrow),a
+0025+  98F0 32 52 82     ld (pencol),a
+0026+  98F3             
+0027+  98F3             
+0028+  98F3             OUTPUT_PAGE_LOOP:
+0029+  98F3 2A 9F 85     ld hl,(cursor_adress)
+0030+  98F6 7E           ld a,(hl)
+0031+  98F7             
+0032+  98F7 FE D6        cp tag_Return
+0033+  98F9 CA DE 9A     jp z,NEXT_LINE
+0034+  98FC FE FC        cp tag_freetext
+0035+  98FE CA 3D 99     jp z,FREETEXT
+0036+  9901 FE FD        cp tag_invert
+0037+  9903 CA 2F 99     jp z,INVERSE
+0038+  9906 FE FE        cp tag_tab
+0039+  9908 CA A6 9A     jp z,TAB
+0040+  990B FE FB        cp tag_picture
+0041+  990D CA 84 99     jp z,PIC
+0042+  9910 FE FF        cp tag_page_end
+0043+  9912 CA F7 9A     jp z,SCROLL_KEY
+0044+  9915 FE F9        cp tag_Square
+0045+  9917 CA 5F 9A     jp z,CUSTOM_SQUARE
+0046+  991A FE FA        cp tag_line
+0047+  991C CA 7D 9A     jp z,CUSTOM_LINE
+0048+  991F             
+0049+  991F FD CB 05 96  res 2,(iy+textflags)
+0050+  9923 CD 7D 47     bcall(_vputmap)
+0051+  9926 FD 7E 05     ld a,(iy+textflags)
+0052+  9929             ; ld a,($942B)
+0053+  9929             ; and a
+0054+  9929             ; jp z,STRANGE_ERROR
+0055+  9929             
+0056+  9929 CD D3 9A     call INCCURSOR
+0057+  992C C3 F3 98     jp OUTPUT_PAGE_LOOP
+0058+  992F             
+0059+  992F             ;STRANGE_ERROR:
+0060+  992F             ; jp _ERRLINKXMIT
+0061+  992F             
+0062+  992F             
+0063+  992F             INVERSE:
+0064+  992F FD 7E 05     ld a,(iy+Textflags)
+0065+  9932 EE 08        xor %00001000
+0066+  9934 FD 77 05     ld (iy+textFlags),a
+0067+  9937 CD D3 9A     call INCCURSOR
+0068+  993A C3 F3 98     jp OUTPUT_PAGE_LOOP
+0069+  993D             
+0070+  993D             FREETEXT:
+0071+  993D 2A 52 82     ld hl,(pencol)
+0072+  9940 D9           exx
+0073+  9941             
+0074+  9941 CD D3 9A     call INCCURSOR
+0075+  9944 7E           ld a,(hl)
+0076+  9945 C6 A1        add a,255-94
+0077+  9947 DA 63 46     jp c,_ERRDOMAIN
+0078+  994A 7E           ld a,(hl)
+0079+  994B 32 53 82     ld (penrow),a
+0080+  994E             
+0081+  994E CD D3 9A     call INCCURSOR
+0082+  9951 7E           ld a,(hl)
+0083+  9952 C6 C0        add a,255-63
+0084+  9954 DA 63 46     jp c,_ERRDOMAIN
+0085+  9957 7E           ld a,(hl)
+0086+  9958 32 52 82     ld (pencol),a
+0087+  995B             
+0088+  995B             FREETEXTLOOP:
+0089+  995B CD D3 9A     call INCCURSOR
+0090+  995E 7E           ld a,(hl)
+0091+  995F FE FD        cp tag_invert
+0092+  9961 CA 6F 99     jp z,FREE_INVERSE
+0093+  9964 FE FC        cp tag_freetext
+0094+  9966 CA 7A 99     jp z,FREE_END
+0095+  9969 CD 7D 47     bcall(_vputmap)
+0096+  996C C3 5B 99     jp FREETEXTLOOP
+0097+  996F             
+0098+  996F             FREE_INVERSE:
+0099+  996F FD 7E 05     ld a,(iy+Textflags)
+0100+  9972 EE 08        xor %00001000
+0101+  9974 FD 77 05     ld (iy+textFlags),a
+0102+  9977 C3 5B 99     jp FREETEXTLOOP
+0103+  997A             
+0104+  997A             FREE_END:
+0105+  997A D9           exx
+0106+  997B 22 52 82     ld (pencol),hl
+0107+  997E CD D3 9A     call INCCURSOR
+0108+  9981 C3 F3 98     jp OUTPUT_PAGE_LOOP
+0109+  9984             
+0110+  9984             
+0111+  9984             PIC:
+0112+  9984 CD D3 9A     call INCCURSOR
+0113+  9987 7E           ld a,(hl)
+0114+  9988 6F           ld l,a
+0115+  9989 26 00        ld h,0
+0116+  998B 3E 08        ld a,8
+0117+  998D CD 0C 40     bcall(_divhlbya)
+0118+  9990 7D           ld a,l
+0119+  9991 32 AB 85     ld (x),a
+0120+  9994             
+0121+  9994 CD D3 9A     call INCCURSOR
+0122+  9997 7E           ld a,(hl)
+0123+  9998 32 AC 85     ld (y),a
+0124+  999B             
+0125+  999B CD D3 9A     call INCCURSOR
+0126+  999E 7E           ld a,(hl)
+0127+  999F 6F           ld l,a
+0128+  99A0 26 00        ld h,0
+0129+  99A2 3E 08        ld a,8
+0130+  99A4 CD 0C 40     bcall(_divhlbya)
+0131+  99A7 A7           and a
+0132+  99A8 C2 78 46     jp nz,_ERRDIMENSION
+0133+  99AB 7D           ld a,l
+0134+  99AC 32 AD 85     ld (width),a
+0135+  99AF             
+0136+  99AF CD D3 9A     call INCCURSOR
+0137+  99B2 7E           ld a,(hl)
+0138+  99B3 32 AE 85     ld (height),a
+0139+  99B6             
+0140+  99B6 3A AB 85     ld a,(x)
+0141+  99B9 47           ld b,a
+0142+  99BA 3A AD 85     ld a,(width)
+0143+  99BD 80           add a,b
+0144+  99BE C6 F3        add a,255-12
+0145+  99C0 DA 63 46     jp c,_ERRDOMAIN
+0146+  99C3             
+0147+  99C3 3A AC 85     ld a,(y)
+0148+  99C6 47           ld b,a
+0149+  99C7 3A AE 85     ld a,(height)
+0150+  99CA 80           add a,b
+0151+  99CB C6 BF        add a,255-64
+0152+  99CD DA 63 46     jp c,_ERRDOMAIN
+0153+  99D0             
+0154+  99D0 3A AC 85     ld a,(y)
+0155+  99D3 6F           ld l,a
+0156+  99D4 26 0C        ld h,12
+0157+  99D6 CD 82 43     bcall(_htimesl)
+0158+  99D9 3A AB 85     ld a,(x)
+0159+  99DC 3D           dec a
+0160+  99DD FE FF        cp $FF
+0161+  99DF CC 4B 9A     call z,A_0
+0162+  99E2 85           add a,l
+0163+  99E3 DC 47 9A     call c,INC_H
+0164+  99E6 6F           ld l,a
+0165+  99E7 11 29 8E     ld de,plotsscreen
+0166+  99EA 19           add hl,de
+0167+  99EB CD 04 40     bcall(_cphlde)
+0168+  99EE CC 49 9A     call z,DEC_HL
+0169+  99F1 22 AF 85     ld (pic_current),hl
+0170+  99F4             
+0171+  99F4 3A AC 85     ld a,(y)
+0172+  99F7 47           ld b,a
+0173+  99F8 3A AE 85     ld a,(height)
+0174+  99FB 80           add a,b
+0175+  99FC 3D           dec a
+0176+  99FD 6F           ld l,a
+0177+  99FE 26 0C        ld h,12
+0178+  9A00 CD 82 43     bcall(_htimesl)
+0179+  9A03 3A AB 85     ld a,(x)
+0180+  9A06 47           ld b,a
+0181+  9A07 3A AD 85     ld a,(width)
+0182+  9A0A 80           add a,b
+0183+  9A0B 45           ld b,l
+0184+  9A0C 80           add a,b
+0185+  9A0D 6F           ld l,a
+0186+  9A0E DC 47 9A     call c,INC_H
+0187+  9A11 11 29 8E     ld de,plotsscreen
+0188+  9A14 19           add hl,de
+0189+  9A15 22 B1 85     ld (PIC_MAX),hl
+0190+  9A18             
+0191+  9A18              
+0192+  9A18             
+0193+  9A18             DRAW_LOOP:
+0194+  9A18 3A AD 85     ld a,(width)
+0195+  9A1B 47           ld b,a
+0196+  9A1C             DRAW_MINILOOP:
+0197+  9A1C             
+0198+  9A1C CD D3 9A     call INCCURSOR
+0199+  9A1F 7E           ld a,(hl)
+0200+  9A20 CD 4D 9A     call PIC_INC
+0201+  9A23 4E           ld c,(hl)
+0202+  9A24 B1           or c			; Transparency
+0203+  9A25 77           ld (hl),a
+0204+  9A26             
+0205+  9A26             
+0206+  9A26 10 F4        djnz DRAW_MINILOOP
+0207+  9A28 3A AD 85     ld a,(width)
+0208+  9A2B 47           ld b,a
+0209+  9A2C 3E 0C        ld a,12
+0210+  9A2E 90           sub b
+0211+  9A2F A7           and a
+0212+  9A30 CA 18 9A     jp z,DRAW_LOOP
+0213+  9A33 47           ld b,a
+0214+  9A34             DRAW_SKIPLOOP:
+0215+  9A34 CD 4D 9A     call PIC_INC
+0216+  9A37 10 FB        djnz DRAW_SKIPLOOP
+0217+  9A39 C3 18 9A     jp DRAW_LOOP
+0218+  9A3C             
+0219+  9A3C             
+0220+  9A3C             
+0221+  9A3C             PIC_EXIT:
+0222+  9A3C E1           pop hl
+0223+  9A3D 06 04        ld b,4
+0224+  9A3F             PIC_EXITLOOP:
+0225+  9A3F CD D3 9A     call INCCURSOR
+0226+  9A42 10 FB        djnz PIC_EXITLOOP
+0227+  9A44 C3 F3 98     jp OUTPUT_PAGE_LOOP
+0228+  9A47             
+0229+  9A47             
+0230+  9A47             
+0231+  9A47             
+0232+  9A47             
+0233+  9A47             
+0234+  9A47             INC_H:
+0235+  9A47 24           inc h
+0236+  9A48 C9           ret
+0237+  9A49             DEC_HL:
+0238+  9A49 2B           dec hl
+0239+  9A4A C9           ret
+0240+  9A4B             A_0:
+0241+  9A4B AF           xor a
+0242+  9A4C C9           ret
+0243+  9A4D             PIC_INC:
+0244+  9A4D 2A B1 85     ld hl,(PIC_MAX)
+0245+  9A50 EB           ex de,hl
+0246+  9A51 2A AF 85     ld hl,(PIC_CURRENT)
+0247+  9A54 23           inc hl
+0248+  9A55 CD 04 40     bcall(_cphlde)
+0249+  9A58 CA 3C 9A     jp z,PIC_EXIT
+0250+  9A5B 22 AF 85     ld (PIC_CURRENT),hl
+0251+  9A5E C9           ret
+0252+  9A5F             
+0253+  9A5F             		; Vector support
+0254+  9A5F             CUSTOM_SQUARE:
+0255+  9A5F CD D3 9A     call INCCURSOR
+0256+  9A62 46           ld b,(hl)
+0257+  9A63             
+0258+  9A63 CD D3 9A     call INCCURSOR
+0259+  9A66 4E           ld c,(hl)
+0260+  9A67             
+0261+  9A67 CD D3 9A     call INCCURSOR
+0262+  9A6A 56           ld d,(hl)
+0263+  9A6B D5           push de
+0264+  9A6C             
+0265+  9A6C CD D3 9A     call INCCURSOR
+0266+  9A6F D1           pop de
+0267+  9A70 5E           ld e,(hl)
+0268+  9A71 D5           push de
+0269+  9A72             
+0270+  9A72 CD D3 9A     call INCCURSOR)
+0271+  9A75 66           ld h,(hl)
+0272+  9A76 D1           pop de
+0273+  9A77             
+0274+  9A77 CD C0 9B     call SQUARE
+0275+  9A7A C3 F3 98     jp OUTPUT_PAGE_LOOP
+0276+  9A7D             
+0277+  9A7D             
+0278+  9A7D             
+0279+  9A7D             
+0280+  9A7D             CUSTOM_LINE:
+0281+  9A7D CD D3 9A     call INCCURSOR
+0282+  9A80 46           ld b,(hl)
+0283+  9A81             
+0284+  9A81 CD D3 9A     call INCCURSOR
+0285+  9A84 4E           ld c,(hl)
+0286+  9A85 3E 3F        ld a,63
+0287+  9A87 91           sub c
+0288+  9A88 4F           ld c,a
+0289+  9A89             
+0290+  9A89 CD D3 9A     call INCCURSOR
+0291+  9A8C 56           ld d,(hl)
+0292+  9A8D D5           push de
+0293+  9A8E             
+0294+  9A8E CD D3 9A     call INCCURSOR
+0295+  9A91 D1           pop de
+0296+  9A92 5E           ld e,(hl)
+0297+  9A93 3E 3F        ld a,63
+0298+  9A95 93           sub e
+0299+  9A96 5F           ld e,a
+0300+  9A97 D5           push de
+0301+  9A98             
+0302+  9A98 CD D3 9A     call INCCURSOR
+0303+  9A9B 66           ld h,(hl)
+0304+  9A9C             
+0305+  9A9C D1           pop de
+0306+  9A9D CD E4 4A     bcall(_Iline)
+0307+  9AA0 CD D3 9A     call INCCURSOR
+0308+  9AA3 C3 F3 98     jp OUTPUT_PAGE_LOOP
+0309+  9AA6             
+0310+  9AA6             
+0311+  9AA6             
+0312+  9AA6             
+0313+  9AA6             
+0314+  9AA6             
+0315+  9AA6             TAB:
+0316+  9AA6 3A 52 82     ld a,(pencol)
+0317+  9AA9 C6 E7        add a,255-24
+0318+  9AAB DA B3 9A     jp c,LARGERTHAN24
+0319+  9AAE 3E 18        ld a,24
+0320+  9AB0 C3 CA 9A     jp END_TAB
+0321+  9AB3             
+0322+  9AB3             LARGERTHAN24:
+0323+  9AB3 3A 52 82     ld a,(pencol)
+0324+  9AB6 C6 CF        add a,255-48
+0325+  9AB8 DA C0 9A     jp c,LARGERTHAN48
+0326+  9ABB 3E 30        ld a,48
+0327+  9ABD C3 CA 9A     jp END_TAB
+0328+  9AC0             
+0329+  9AC0             LARGERTHAN48:
+0330+  9AC0 3A 52 82     ld a,(pencol)
+0331+  9AC3 C6 B7        add a,255-72
+0332+  9AC5 DA CA 9A     jp c,END_TAB
+0333+  9AC8 3E 48        ld a,72
+0334+  9ACA             
+0335+  9ACA             END_TAB:
+0336+  9ACA 32 52 82     ld (pencol),a
+0337+  9ACD CD D3 9A     call INCCURSOR
+0338+  9AD0 C3 F3 98     jp OUTPUT_PAGE_LOOP
+0339+  9AD3             
+0340+  9AD3             INCCURSOR:
+0341+  9AD3 CD 53 9C     call file.readByte
+0342+  9AD6 DA DA 9A     jp c,RETTO__SCROLL_KEY
+0343+  9AD9 C9           ret
+0344+  9ADA             
+0345+  9ADA             RETTO__SCROLL_KEY:
+0346+  9ADA E1           pop hl
+0347+  9ADB C3 F7 9A     jp SCROLL_KEY
+0348+  9ADE             
+0349+  9ADE             NEXT_LINE:
+0350+  9ADE CD D3 9A     call INCCURSOR
+0351+  9AE1 3A 53 82     ld a,(penrow)
+0352+  9AE4 C6 06        add a,6
+0353+  9AE6 06 C5        ld b,255-58
+0354+  9AE8 80           add a,b
+0355+  9AE9 DA F3 98     jp c,OUTPUT_PAGE_LOOP
+0356+  9AEC 90           sub b
+0357+  9AED 32 53 82     ld (penrow),a
+0358+  9AF0 AF           xor a
+0359+  9AF1 32 52 82     ld (pencol),a
+0360+  9AF4 C3 F3 98     jp OUTPUT_PAGE_LOOP
+0361+  9AF7             
+0362+  9AF7             SCROLL_KEY:
+0363+  9AF7 CD 64 51     bcall(_grbufcpy_v)
+0364+  9AFA FD 7E 05     ld a,(iy+textflags)
+0365+  9AFD 32 9E 85     ld (asave),a
+0366+  9B00 FD CB 05 9E  res textinverse,(iy+textflags)
+0367+  9B04             SCROLL_KEYLOOP:
+0368+  9B04 CD 94 9B     call BETAKEY
+0369+  9B07 FE 04        cp key_up
+0370+  9B09 CA 25 9B     jp z,UP
+0371+  9B0C FE 01        cp key_down
+0372+  9B0E CA 19 9B     jp z,DOWN
+0373+  9B11 FE 09        cp key_enter
+0374+  9B13 CA 91 9B     jp z,SCROLL_BETASHELL
+0375+  9B16 C3 04 9B     jp SCROLL_KEYLOOP
+0376+  9B19             
+0377+  9B19             DOWN:
+0378+  9B19 3A 9E 85     ld a,(asave)
+0379+  9B1C FD 77 05     ld (iy+textflags),a
+0380+  9B1F CD D3 9A     call INCCURSOR
+0381+  9B22 C3 E9 98     jp OUTPUT_PAGE
+0382+  9B25             
+0383+  9B25             
+0384+  9B25             UP:
+0385+  9B25 3A 9E 85     ld a,(asave)
+0386+  9B28 FD 77 05     ld (iy+textflags),a
+0387+  9B2B             
+0388+  9B2B              
+0389+  9B2B 06 02        ld b,2
+0390+  9B2D 2A 9F 85     ld hl,(cursor_adress)
+0391+  9B30 7E           ld a,(hl)
+0392+  9B31 FE FB        cp tag_picture
+0393+  9B33 CA 4C 9B     jp z,SKIP_PICTURE
+0394+  9B36             
+0395+  9B36             UP_LOOP:
+0396+  9B36 CD 6F 9B     call DECCURSOR
+0397+  9B39             
+0398+  9B39 7E           ld a,(hl)
+0399+  9B3A FE FB        cp tag_picture
+0400+  9B3C CA 4C 9B     jp z,SKIP_PICTURE
+0401+  9B3F             
+0402+  9B3F FE FF        cp tag_page_end
+0403+  9B41 C2 36 9B     jp nz,up_loop
+0404+  9B44 10 F0        djnz UP_LOOP
+0405+  9B46             
+0406+  9B46 CD D3 9A     call INCCURSOR
+0407+  9B49 C3 E9 98     jp OUTPUT_PAGE
+0408+  9B4C             
+0409+  9B4C             SKIP_PICTURE:
+0410+  9B4C CD 6F 9B     call DECCURSOR
+0411+  9B4F 7E           ld a,(hl)
+0412+  9B50 4F           ld c,a
+0413+  9B51 CD 6F 9B     call DECCURSOR
+0414+  9B54 7E           ld a,(hl)
+0415+  9B55 47           ld b,a
+0416+  9B56             SKIP_PIC_LOOP:
+0417+  9B56 CD 6F 9B     call DECCURSOR
+0418+  9B59 0B           dec bc
+0419+  9B5A 50           ld d,b
+0420+  9B5B 59           ld e,c
+0421+  9B5C 21 00 00     ld hl,0
+0422+  9B5F CD 04 40     bcall(_cphlde)
+0423+  9B62 C2 56 9B     jp nz,SKIP_PIC_LOOP
+0424+  9B65 06 05        ld b,5
+0425+  9B67             DECCURSOR_LOOP:
+0426+  9B67 CD 6F 9B     call DECCURSOR
+0427+  9B6A 10 FB        djnz DECCURSOR_LOOP
+0428+  9B6C C3 36 9B     jp UP_LOOP
+0429+  9B6F             
+0430+  9B6F             
+0431+  9B6F             DECCURSOR:
+0432+  9B6F 2A A1 85     ld hl,(min_adress)
+0433+  9B72 EB           ex de,hl
+0434+  9B73 2A 9F 85     ld hl,(cursor_adress)
+0435+  9B76 2B           dec hl
+0436+  9B77 CD 04 40     bcall(_cphlde)
+0437+  9B7A CA 81 9B     jp z,RETTO__OUTPUT_PAGE
+0438+  9B7D 22 9F 85     ld (cursor_adress),hl
+0439+  9B80 C9           ret
+0440+  9B81             RETTO__OUTPUT_PAGE:
+0441+  9B81 E1           pop hl
+0442+  9B82 C3 E9 98     jp OUTPUT_PAGE
+0443+  9B85             
+0444+  9B85             
+0445+  9B85             
+0446+  9B85             
+0447+  9B85             ScreenVPutMap:
+0448+  9B85 FD CB 14 BE  res textwrite,(iy+sgrflags)
+0449+  9B89 CD 7D 47     bcall(_vputmap)
+0450+  9B8C FD CB 14 FE  set textwrite,(iy+sgrflags)
+0451+  9B90 C9           ret
+0452+  9B91             
+0453+  9B91             SCROLL_BETASHELL:
+0454+  9B91 C3 56 93     jp betashell0845   9B94             
+0846   9B94             
+0847   9B94             
+0848   9B94             
+0849   9B94             
+0850   9B94             
+0851   9B94             
+0852   9B94             
+0853   9B94             
+0854   9B94             ;BETAKEY:
+0855   9B94             ; bcall(_runindicoff)
+0856   9B94             ;#IFDEF TI83P
+0857   9B94             ; bcall(_op1toop3)		; prevents MirageOS bug
+0858   9B94             ;#ENDIF
+0859   9B94             ; bcall(_getkey)
+0860   9B94             ;#IFDEF TI83P
+0861   9B94             ; bcall(_op3toop1)		; prevents MirageOS bug
+0862   9B94             ;#ENDIF
+0863   9B94             ;
+0864   9B94             ; bit oninterrupt,(iy+onflags)	; On key
+0865   9B94             ; jr nz,EXIT
+0866   9B94             ;
+0867   9B94             ; cp key_clear
+0868   9B94             ; jr z,EXIT
+0869   9B94             ; cp key_quit
+0870   9B94             ; jr z,EXIT
+0871   9B94             ; ld b,%10001100		; Wiskunde
+0872   9B94             ; cp key_Y
+0873   9B94             ; jr z,SHORTCUT
+0874   9B94             ; ld b,%01001100		; Natuurkunde
+0875   9B94             ; cp Key_window
+0876   9B94             ; jr z,SHORTCUT
+0877   9B94             ; ld b,%00101100		; Scheikunde
+0878   9B94             ; cp Key_zoom
+0879   9B94             ; jr z,SHORTCUT
+0880   9B94             ; ld b,%00011100		; Overigen
+0881   9B94             ; cp Key_Trace
+0882   9B94             ; jr z,SHORTCUT
+0883   9B94             ; ld b,%11111100		; Alles
+0884   9B94             ; cp Key_graph
+0885   9B94             ; jr z,SHORTCUT
+0886   9B94             ; ret
+0887   9B94             ;
+0888   9B94             ;SHORTCUT:
+0889   9B94             ; ld a,b
+0890   9B94             ; ld (iy+SelectFlags),a
+0891   9B94             ; bit MenuInDisplay,(iy+BetaFlags)
+0892   9B94             ; jr z,BETASHELL
+0893   9B94             ; jr UPDATE_MENU
+0894   9B94             
+0895   9B94             BETAKEY:
+0896   9B94 CD 95 47     bcall(_runindicoff)
+0897   9B97             
+0898   9B97             GETKEY_LOOP:
+0899   9B97 CD 14 40     bcall(_GetCSC)
+0900   9B9A A7           and a
+0901   9B9B 28 FA        jr z,GETKEY_LOOP
+0902   9B9D             
+0903   9B9D FD CB 09 66  bit oninterrupt,(iy+onflags)	; On key
+0904   9BA1 C2 08 9C     jp nz,EXIT
+0905   9BA4             
+0906   9BA4 FE 0F        cp key_clear
+0907   9BA6 CA 08 9C     jp z,EXIT
+0908   9BA9 FE 37        cp key_quit
+0909   9BAB CA 08 9C     jp z,EXIT
+0910   9BAE             ; ld b,%10001100		; Wiskunde
+0911   9BAE             ; cp key_Y
+0912   9BAE             ; jr z,SHORTCUT
+0913   9BAE             ; ld b,%01001100		; Natuurkunde
+0914   9BAE             ; cp Key_window
+0915   9BAE             ; jr z,SHORTCUT
+0916   9BAE             ; ld b,%00101100		; Scheikunde
+0917   9BAE             ; cp Key_zoom
+0918   9BAE             ; jr z,SHORTCUT
+0919   9BAE             ; ld b,%00011100		; Overigen
+0920   9BAE             ; cp Key_Trace
+0921   9BAE             ; jr z,SHORTCUT
+0922   9BAE             ; ld b,%11111100		; Alles
+0923   9BAE             ; cp Key_graph
+0924   9BAE             ; jr z,SHORTCUT
+0925   9BAE C9           ret
+0926   9BAF             
+0927   9BAF             ;SHORTCUT:
+0928   9BAF             ; ld a,b
+0929   9BAF             ; ld (iy+SelectFlags),a
+0930   9BAF             ; bit MenuInDisplay,(iy+BetaFlags)
+0931   9BAF             ; jp z,BETASHELL
+0932   9BAF             ; jp UPDATE_MENU
+0933   9BAF             
+0934   9BAF             
+0935   9BAF             CPOP1OP2:
+0936   9BAF             ; Compares the program names in op1 and op2, the _cpop1op2 routine compares them as floating point
+0937   9BAF             ; Input:
+0938   9BAF             ; op1: program name to compare
+0939   9BAF             ; op2: program name to compare
+0940   9BAF             ; Output:
+0941   9BAF             ; zero flag set if op1=op2
+0942   9BAF             ; zero flag reset if op1!=op2
+0943   9BAF             ; Destroys:
+0944   9BAF             ; Registers hl, de, b, a, c
+0945   9BAF 21 3A 80     ld hl,op1+1
+0946   9BB2 11 45 80     ld de,op2+1
+0947   9BB5 06 08        ld b,8
+0948   9BB7             CPOP1OP2_LOOP:
+0949   9BB7 1A           ld a,(de)
+0950   9BB8 4E           ld c,(hl)
+0951   9BB9 B9           cp c
+0952   9BBA C0           ret nz
+0953   9BBB 23           inc hl
+0954   9BBC 13           inc de
+0955   9BBD 10 F8        djnz CPOP1OP2_LOOP
+0956   9BBF C9           ret
+0957   9BC0             
+0958   9BC0             
+0959   9BC0             
+0960   9BC0             
+0961   9BC0             
+0962   9BC0             
+0963   9BC0             SQUARE:
+0964   9BC0             ; Puts a rectangle in the graph backup buffer or a straight line
+0965   9BC0             ; Input:
+0966   9BC0             ; b: x coordinate of upper left corner
+0967   9BC0             ; c: y coordinate of upper left corner
+0968   9BC0             ; d: x coordinate of lower right corner
+0969   9BC0             ; e: y coordinate of lower right corner
+0970   9BC0             ; h: 0 - pixel off operation
+0971   9BC0             ;    1 - pixel on operation
+0972   9BC0             ;    2+ - pixel change operation (xor)
+0973   9BC0             ; @require b<96 && c<64 && d<96 && e<64 && b<=d && c<=e
+0974   9BC0             ; to draw a line, make sure b=d or c=e
+0975   9BC0             ; to draw a point, make sure b=d and c=e
+0976   9BC0             
+0977   9BC0 7C           ld a,h
+0978   9BC1 FE 02        cp 2
+0979   9BC3 20 02        jr nz,SQUARE_PIXELCHANGE1
+0980   9BC5             
+0981   9BC5 26 01        LineOn
+0982   9BC7             SQUARE_PIXELCHANGE1:
+0983   9BC7             ; b=b
+0984   9BC7             ; c=c
+0985   9BC7             ; d=d
+0986   9BC7             ; e=c
+0987   9BC7 D5           push de
+0988   9BC8 59           ld e,c
+0989   9BC9 CD E4 4A     bcall(_iline)
+0990   9BCC D1           pop de
+0991   9BCD             
+0992   9BCD             ; b=b
+0993   9BCD             ; c=e
+0994   9BCD             ; d=d
+0995   9BCD             ; e=e
+0996   9BCD C5           push bc
+0997   9BCE 4B           ld c,e
+0998   9BCF CD E4 4A     bcall(_iline)
+0999   9BD2 C1           pop bc
+1000   9BD3             
+1001   9BD3 7C           ld a,h
+1002   9BD4 FE 02        cp 2
+1003   9BD6 20 02        jr nz,SQUARE_PIXELCHANGE2
+1004   9BD8 26 02        LineChange
+1005   9BDA             SQUARE_PIXELCHANGE2:
+1006   9BDA             ; b=b
+1007   9BDA             ; c=c
+1008   9BDA             ; d=b
+1009   9BDA             ; e=e
+1010   9BDA D5           push de
+1011   9BDB 50           ld d,b
+1012   9BDC CD E4 4A     bcall(_iline)
+1013   9BDF D1           pop de
+1014   9BE0             
+1015   9BE0             ; b=d
+1016   9BE0             ; c=c
+1017   9BE0             ; d=d
+1018   9BE0             ; e=e
+1019   9BE0 C5           push bc
+1020   9BE1 42           ld b,d
+1021   9BE2 CD E4 4A     bcall(_iline)
+1022   9BE5 C1           pop bc
+1023   9BE6 C9           ret
+1024   9BE7             
+1025   9BE7             
+1026   9BE7             
+1027   9BE7             
+1028   9BE7             
+1029   9BE7             
+1030   9BE7             
+1031   9BE7             
+1032   9BE7             
+1033   9BE7             
+1034   9BE7             
+1035   9BE7             
+1036   9BE7             
+1037   9BE7             
+1038   9BE7             
+1039   9BE7             
+1040   9BE7             SAVE_SELECT_FLAGS:
+1041   9BE7 21 91 85     ld hl,BetaName
+1042   9BEA 11 39 80     ld de,Op1
+1043   9BED 01 09 00     ld bc,9
+1044   9BF0 ED B0        ldir
+1045   9BF2             
+1046   9BF2 CD 2A 44     bcall(_chkfindsym)
+1047   9BF5 EB           ex de,hl
+1048   9BF6 5E           ld e,(hl)
+1049   9BF7 23           inc hl
+1050   9BF8 56           ld d,(hl)
+1051   9BF9 E5           push hl		; hl=program adress
+1052   9BFA~            #IFDEF TI83P
+1053   9BFA~             ld hl,END_OF_BETA-progstart+2	; length squished+length bytes
+1054   9BFA             #ELSE
+1055   9BFA 21 A1 09     ld hl,END_OF_BETA-progstart	; length squished
+1056   9BFD             #ENDIF
+1057   9BFD CD 04 40     bcall(_cphlde)		; check lenght to see if beta is unquished
+1058   9C00 E1           pop hl
+1059   9C01 C0           ret nz
+1060   9C02 19           add hl,de
+1061   9C03 FD 7E 21     ld a,(iy+SelectFlags)
+1062   9C06 77           ld (hl),a
+1063   9C07 C9           ret
+1064   9C08             
+1065   9C08             EXIT:
+1066   9C08             
+1067   9C08 CD E7 9B     call SAVE_SELECT_FLAGS
+1068   9C0B             
+1069   9C0B FD CB 14 BE  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
+1070   9C0F~            #IFDEF TI83P
+1071   9C0F~             res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
+1072   9C0F             #ENDIF
+1073   9C0F             
+1074   9C0F FD CB 09 A6  res oninterrupt,(iy+onflags)
+1075   9C13 ED 7B 8F 85  ld sp,(savesp)
+1076   9C17 CD 5B 51     bcall(_grbufclr)
+1077   9C1A 21 00 00     ld hl,0
+1078   9C1D 22 0C 80     ld (currow),hl
+1079   9C20 3E 20        ld a,$20
+1080   9C22 CD 01 47     bcall(_putmap)
+1081   9C25 CD 5D 47     bcall(_clrscrnfull)
+1082   9C28 CD 65 47     bcall(_clrtxtshd)
+1083   9C2B             
+1084   9C2B 21 65 82     ld hl,savesscreen
+1085   9C2E 11 29 8E     ld de,plotsscreen
+1086   9C31 01 00 03     ld bc,768
+1087   9C34 ED B0        ldir			; restore graph screen
+1088   9C36             
+1089   9C36             ; bcall(_JforceCmdnochar)		; This is the cause of the famous Beta NT memory bug
+1090   9C36 C9           ret
+1091   9C37             
+1092   9C37             
+1093   9C37             
+1094   9C37             #include "include/file.inc"
+0001+  9C37             #include include/util.inc
+0001++ 9C37~            #IFDEF use_util.SubHLbyDE
+0002++ 9C37~            util.SubHLbyDE:
+0003++ 9C37~             ld a,e
+0004++ 9C37~             neg
+0005++ 9C37~             ld e,a
+0006++ 9C37~             ld a,d
+0007++ 9C37~             neg
+0008++ 9C37~             ld d,a
+0009++ 9C37~             dec d
+0010++ 9C37~             add hl,de
+0011++ 9C37~             ret
+0012++ 9C37             #ENDIF
+0013++ 9C37             
+0014++ 9C37             .end
+0015++ 9C37             END
+0002+  9C37             
+0003+  9C37             #IFDEF use_file.open
+0004+  9C37             #DEFINE use_file.rom.incpointer
+0005+  9C37             #DEFINE use_file.rom.readinc
+0006+  9C37             file.open:
+0007+  9C37             ; input: OP1	filename
+0008+  9C37             ; output	none
+0009+  9C37             
+0010+  9C37             
+0011+  9C37             ; Program Symbol Table Entry:
+0012+  9C37             ; -14 -13 -12 -11 -10 -9 -8 -7 -6 -5   -4  -3  -2  -1 0
+0013+  9C37             ; Name                         NL Page DAH DAL Ver T2 T
+0014+  9C37             ; T	Type
+0015+  9C37             ; T2	Reserved for future use
+0016+  9C37             ; Ver	Version Number
+0017+  9C37             ; DAL	Data Structure Least Significant Byte
+0018+  9C37             ; DAH	Data Structure Most Significant Byte
+0019+  9C37             ; PAGE	ROM Page
+0020+  9C37             ; NL	Name file.length
+0021+  9C37             
+0022+  9C37 CD 2A 44     bcall(_chkfindsym)
+0023+  9C3A D8           ret c			; program not found
+0024+  9C3B 22 8F 9C     ld (file.symtableptr),hl
+0025+  9C3E EB           ex de,hl
+0026+  9C3F             ; xor a
+0027+  9C3F             ; ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
+0028+  9C3F             
+0029+  9C3F~            #IFDEF TI83P
+0030+  9C3F~             ld a,b
+0031+  9C3F~            ; ld (file.start_page),a
+0032+  9C3F~            ; ld (file.current_page),a
+0033+  9C3F~             and a
+0034+  9C3F~             jr z,file.open.ram
+0035+  9C3F~            
+0036+  9C3F~            
+0037+  9C3F~            file.open.rom:
+0038+  9C3F~             ld a,9
+0039+  9C3F~            ; skip first part of rom-stored symbol table
+0040+  9C3F~            file.open.skiploop:
+0041+  9C3F~             push af
+0042+  9C3F~             call file.rom.incpointer
+0043+  9C3F~             pop af
+0044+  9C3F~             dec a
+0045+  9C3F~             jr nz,file.open.skiploop
+0046+  9C3F~             call file.rom.readinc
+0047+  9C3F~             ld a,c
+0048+  9C3F~            ; skip program name
+0049+  9C3F~            file.open.skiploop2:
+0050+  9C3F~             push af
+0051+  9C3F~             call file.rom.incpointer
+0052+  9C3F~             pop af
+0053+  9C3F~             dec a
+0054+  9C3F~             jr nz,file.open.skiploop2
+0055+  9C3F~            ; length low byte
+0056+  9C3F~             call file.rom.readinc
+0057+  9C3F~             ld e,c
+0058+  9C3F~             bcall(_LoadCIndPaged)
+0059+  9C3F~            ; length high byte
+0060+  9C3F~             ld d,c
+0061+  9C3F~             ld a,b
+0062+  9C3F~             ld (file.start_page),a
+0063+  9C3F~             ld (file.current_page),a
+0064+  9C3F~             jr file.open.finish
+0065+  9C3F             #ENDIF
+0066+  9C3F             
+0067+  9C3F             ; hl symtable pointer
+0068+  9C3F             ; de vardata pointer (only in ram)
+0069+  9C3F             
+0070+  9C3F             file.open.ram:
+0071+  9C3F 5E           ld e,(hl)		; file.length low byte
+0072+  9C40 23           inc hl
+0073+  9C41 56           ld d,(hl)		; file.length high byte
+0074+  9C42             
+0075+  9C42             file.open.finish:
+0076+  9C42 22 91 9C     ld (file.start_adress),hl
+0077+  9C45 22 93 9C     ld (file.current_adress),hl
+0078+  9C48 EB           ex de,hl
+0079+  9C49 22 97 9C     ld (file.length),hl
+0080+  9C4C 21 00 00     ld hl,0
+0081+  9C4F 22 95 9C     ld (file.relative_adress),hl
+0082+  9C52 C9           ret
+0083+  9C53             #ENDIF
+0084+  9C53             
+0085+  9C53~            #IFDEF TI83P
+0086+  9C53~            #IFDEF use_file.rom.readinc
+0087+  9C53~            file.rom.readinc:
+0088+  9C53~             bcall(_LoadCIndPaged)
+0089+  9C53~             inc hl
+0090+  9C53~             bit 7,h
+0091+  9C53~             ret z
+0092+  9C53~             inc b
+0093+  9C53~             res 7,h
+0094+  9C53~             set 6,h
+0095+  9C53~             ret
+0096+  9C53~            #ENDIF
+0097+  9C53~            
+0098+  9C53~            #IFDEF use_file.rom.incpointer
+0099+  9C53~            file.rom.incpointer:
+0100+  9C53~             inc hl
+0101+  9C53~             bit 7,h
+0102+  9C53~             ret z
+0103+  9C53~             inc b
+0104+  9C53~             res 7,h
+0105+  9C53~             set 6,h
+0106+  9C53~             ret
+0107+  9C53~            #ENDIF
+0108+  9C53~            
+0109+  9C53~            #IFDEF use_file.rom.decpointer
+0110+  9C53~            file.rom.decpointer:
+0111+  9C53~             dec hl
+0112+  9C53~             bit 6,h
+0113+  9C53~             ret nz
+0114+  9C53~             dec b
+0115+  9C53~             set 6,h
+0116+  9C53~             ret
+0117+  9C53~            #ENDIF
+0118+  9C53             #ENDIF
+0119+  9C53             
+0120+  9C53             #IFDEF use_file.readByte
+0121+  9C53             file.readByte:
+0122+  9C53             ; reads one byte from program and advances cursor. Returns carry flag if EOF is reached.
+0123+  9C53             ; input		none
+0124+  9C53             ; output a	byte
+0125+  9C53             
+0126+  9C53~            #IFDEF TI83P
+0127+  9C53~             ld a,(file.current_page)
+0128+  9C53~             and a
+0129+  9C53~             jr z,file.read.fromram
+0130+  9C53~            
+0131+  9C53~            file.read.fromrom:
+0132+  9C53~            ; check maximum length
+0133+  9C53~             ld hl,(file.length)
+0134+  9C53~             ex de,hl
+0135+  9C53~             ld hl,(file.relative_adress)
+0136+  9C53~             bcall(_cphlde)
+0137+  9C53~             jr z,file.read.EOF
+0138+  9C53~            
+0139+  9C53~            ; increase adress
+0140+  9C53~             inc hl
+0141+  9C53~             ld (file.relative_adress),hl
+0142+  9C53~             ld hl,(file.current_adress)
+0143+  9C53~             inc hl
+0144+  9C53~             ld a,(file.current_page)
+0145+  9C53~            
+0146+  9C53~             bit 7,h
+0147+  9C53~             jr z,file.read.samepage
+0148+  9C53~             res 7,h
+0149+  9C53~             set 6,h
+0150+  9C53~             inc a
+0151+  9C53~             ld (file.current_page),a
+0152+  9C53~            file.read.samepage
+0153+  9C53~             ld (file.current_adress),hl
+0154+  9C53~             ld b,a
+0155+  9C53~            ; read byte
+0156+  9C53~             bcall(_LoadCIndPaged)
+0157+  9C53~             ld a,c
+0158+  9C53~             rcf
+0158+  9C53~             rcf
+0159+  9C53~             ret
+0160+  9C53             #ENDIF
+0161+  9C53             
+0162+  9C53             file.read.fromram:
+0163+  9C53             ; check maximum length
+0164+  9C53 2A 97 9C     ld hl,(file.length)
+0165+  9C56 EB           ex de,hl
+0166+  9C57 2A 95 9C     ld hl,(file.relative_adress)
+0167+  9C5A CD 04 40     bcall(_cphlde)
+0168+  9C5D 28 0F        jr z,file.read.EOF
+0169+  9C5F             
+0170+  9C5F             ; increase adress
+0171+  9C5F 23           inc hl
+0172+  9C60 22 95 9C     ld (file.relative_adress),hl
+0173+  9C63 2A 93 9C     ld hl,(file.current_adress)
+0174+  9C66 23           inc hl
+0175+  9C67 22 93 9C     ld (file.current_adress),hl
+0176+  9C6A             ; read byte
+0177+  9C6A 7E           ld a,(hl)
+0178+  9C6B 37           rcf
+0178+  9C6C 3F          
+0179+  9C6D C9           ret
+0180+  9C6E             
+0181+  9C6E             file.read.EOF
+0182+  9C6E 37           scf
+0183+  9C6F C9           ret
+0184+  9C70             #ENDIF
+0185+  9C70             
+0186+  9C70~            #IFDEF use_file.readByteBackwards
+0187+  9C70~            file.readByteBackwards:
+0188+  9C70~            ; reads one byte from program and decreases cursor. Returns carry flag if BOF is reached.
+0189+  9C70~            ; input		none
+0190+  9C70~            ; output a	byte
+0191+  9C70~            
+0192+  9C70~            #IFDEF TI83P
+0193+  9C70~             ld a,(file.current_page)
+0194+  9C70~             and a
+0195+  9C70~             jr z,file.readback.fromram
+0196+  9C70~            
+0197+  9C70~            file.readback.fromrom:
+0198+  9C70~            ; check maximum length
+0199+  9C70~             ld hl,0
+0200+  9C70~             ex de,hl
+0201+  9C70~             ld hl,(file.relative_adress)
+0202+  9C70~             bcall(_cphlde)
+0203+  9C70~             jr z,file.readback.BOF
+0204+  9C70~            
+0205+  9C70~            ; decrease adress
+0206+  9C70~             dec hl
+0207+  9C70~             ld (file.relative_adress),hl
+0208+  9C70~             ld hl,(file.current_adress)
+0209+  9C70~             dec hl
+0210+  9C70~             ld a,(file.current_page)
+0211+  9C70~            
+0212+  9C70~             bit 6,h
+0213+  9C70~             jr nz,file.readback.samepage
+0214+  9C70~             set 6,h
+0215+  9C70~             dec a
+0216+  9C70~             ld (file.current_page),a
+0217+  9C70~            file.readback.samepage
+0218+  9C70~             ld (file.current_adress),hl
+0219+  9C70~             ld b,a
+0220+  9C70~            ; read byte
+0221+  9C70~             bcall(_LoadCIndPaged)
+0222+  9C70~             ld a,c
+0223+  9C70~             rcf
+0223+  9C70~             rcf
+0224+  9C70~             ret
+0225+  9C70~            #ENDIF
+0226+  9C70~            
+0227+  9C70~            file.readback.fromram:
+0228+  9C70~            ; check maximum length
+0229+  9C70~             ld hl,0
+0230+  9C70~             ex de,hl
+0231+  9C70~             ld hl,(file.relative_adress)
+0232+  9C70~             bcall(_cphlde)
+0233+  9C70~             jr z,file.readback.BOF
+0234+  9C70~            
+0235+  9C70~            ; decrease adress
+0236+  9C70~             dec hl
+0237+  9C70~             ld (file.relative_adress),hl
+0238+  9C70~             ld hl,(file.current_adress)
+0239+  9C70~             dec hl
+0240+  9C70~             ld (file.current_adress),hl
+0241+  9C70~            ; read byte
+0242+  9C70~             ld a,(hl)
+0243+  9C70~             rcf
+0243+  9C70~             rcf
+0244+  9C70~             ret
+0245+  9C70~            
+0246+  9C70~            file.readback.BOF
+0247+  9C70~             scf
+0248+  9C70~             ret
+0249+  9C70             #ENDIF
+0250+  9C70             
+0251+  9C70             
+0252+  9C70             ; Ti-83 Symbol Table Structure:
+0253+  9C70             ; [=================================================================================]
+0254+  9C70             ; |-11 - -4     |-3         |-2                       |-1                      |0   |
+0255+  9C70             ; |Variable Name|Name Length|Pointer to data High byte|Pointer to data Low byte|Type|
+0256+  9C70             ; [=================================================================================]
+0257+  9C70             ;
+0258+  9C70             ; Ti-83+ Symbol Table Structure:
+0259+  9C70             ; [=====================================================================================================]
+0260+  9C70             ; |-14 - -7     |-6         |-5  |-4                       |-3                      |-2     |-1    |0   |
+0261+  9C70             ; |Variable Name|Name Length|Page|Pointer to data High byte|Pointer to data Low byte|Version|unused|Type|
+0262+  9C70             ; [=====================================================================================================]
+0263+  9C70             ; flags:
+0264+  9C70             ; bit 0	Object Type
+0265+  9C70             ; bit 1	"
+0266+  9C70             ; bit 2	"
+0267+  9C70             ; bit 3	"
+0268+  9C70             ; bit 4	"
+0269+  9C70             ; bit 5	Graph equation selected
+0270+  9C70             ; bit 6	Variable used during graphing
+0271+  9C70             ; bit 7	Link Transfer Flag
+0272+  9C70             
+0273+  9C70             
+0274+  9C70~            #IFDEF use_file.getType
+0275+  9C70~            file.getType:
+0276+  9C70~            ; input none
+0277+  9C70~            ; output a	Program Type
+0278+  9C70~             ld hl,(file.symtableptr)
+0279+  9C70~             ld a,(hl)
+0280+  9C70~             and $1F
+0281+  9C70~             ret
+0282+  9C70             #ENDIF
+0283+  9C70             
+0284+  9C70~            #IFDEF TI83P
+0285+  9C70~            #IFDEF use_file.getVersion
+0286+  9C70~            file.getVersion:
+0287+  9C70~             ld hl,(file.symtableptr)
+0288+  9C70~             dec hl
+0289+  9C70~             dec hl
+0290+  9C70~             ld a,(hl)
+0291+  9C70~             ret
+0292+  9C70~            #ENDIF
+0293+  9C70             #ENDIF
+0294+  9C70             
+0295+  9C70~            #IFDEF use_file.protect
+0296+  9C70~            #DEFINE use_file.getType
+0297+  9C70~            file.protect:
+0298+  9C70~             call file.getType
+0299+  9C70~             and %11100000		; preserve misc flags
+0300+  9C70~             or 6			; protect
+0301+  9C70~             ld (hl),a
+0302+  9C70~             ret
+0303+  9C70             #ENDIF
+0304+  9C70             
+0305+  9C70~            #IFDEF use_file.unprotect
+0306+  9C70~            #DEFINE use_file.getType
+0307+  9C70~            file.unprotect:
+0308+  9C70~             call file.getType
+0309+  9C70~             and %11100000		; preserve misc flags
+0310+  9C70~             or 5			; unprotect
+0311+  9C70~             ld (hl),a
+0312+  9C70~             ret
+0313+  9C70             #ENDIF
+0314+  9C70             
+0315+  9C70~            #IFDEF use_file.getName
+0316+  9C70~            #DEFINE use_util.subHLbyDE
+0317+  9C70~            file.getName:
+0318+  9C70~             bcall(_ZerooOP1)
+0319+  9C70~             ld hl,(file.symtableptr)
+0320+  9C70~             ld a,(hl)
+0321+  9C70~             ld (op1),a
+0322+  9C70~            #IFDEF TI83P
+0323+  9C70~             ld de,6
+0324+  9C70~            #ENDIF
+0325+  9C70~            #IFDEF TI83
+0326+  9C70~             ld de,3
+0327+  9C70~            #ENDIF
+0328+  9C70~             call util.subHLbyDE
+0329+  9C70~             ld b,(hl)
+0330+  9C70~             ld de,op1+1
+0331+  9C70~            file.getName.loop:
+0332+  9C70~             ld a,(hl)
+0333+  9C70~             ld (de),a
+0334+  9C70~             dec hl
+0335+  9C70~             inc de
+0336+  9C70~             djnz file.getName.loop
+0337+  9C70~             ret
+0338+  9C70             #ENDIF
+0339+  9C70             
+0340+  9C70             #IFDEF use_file.skip
+0341+  9C70             #DEFINE use_file.rom.incpointer
+0342+  9C70             file.skip
+0343+  9C70             ; input hl	number of bytes to skip
+0344+  9C70             ; output	none
+0345+  9C70 E5           push hl
+0346+  9C71 EB           ex de,hl
+0347+  9C72 2A 95 9C     ld hl,(file.relative_adress)
+0348+  9C75 19           add hl,de
+0349+  9C76 EB           ex de,hl
+0350+  9C77 2A 97 9C     ld hl,(file.length)
+0351+  9C7A CD 04 40     bcall(_cphlde)
+0352+  9C7D 38 0E        jr c,file.skip.EOF
+0353+  9C7F EB           ex de,hl
+0354+  9C80 22 95 9C     ld (file.relative_adress),hl
+0355+  9C83 EB           ex de,hl
+0356+  9C84 E1           pop hl
+0357+  9C85~            #IFDEF TI83P
+0358+  9C85~             ld a,(file.current_page)
+0359+  9C85~             and a
+0360+  9C85~             jr z,file.skip.ram
+0361+  9C85~            
+0362+  9C85~            file.skip.rom:
+0363+  9C85~             ld b,a
+0364+  9C85~             ex de,hl
+0365+  9C85~             ld hl,(file.current_adress)
+0366+  9C85~             push hl
+0367+  9C85~            file.skip.rom_loop:
+0368+  9C85~             pop hl
+0369+  9C85~             call file.rom.incpointer
+0370+  9C85~             push hl
+0371+  9C85~             dec de
+0372+  9C85~             ld hl,0
+0373+  9C85~             bcall(_cphlde)
+0374+  9C85~             jr nz,file.skip.rom_loop
+0375+  9C85~             pop hl
+0376+  9C85~             ld (file.current_adress),hl
+0377+  9C85~             ret
+0378+  9C85             #ENDIF
+0379+  9C85             
+0380+  9C85             file.skip.ram:
+0381+  9C85 2A 93 9C     ld hl,(file.current_adress)
+0382+  9C88 19           add hl,de
+0383+  9C89 22 93 9C     ld (file.current_adress),hl
+0384+  9C8C C9           ret
+0385+  9C8D             
+0386+  9C8D             file.skip.EOF:
+0387+  9C8D E1           pop hl
+0388+  9C8E C9           ret
+0389+  9C8F             #ENDIF
+0390+  9C8F             
+0391+  9C8F~            #IFDEF use_file.skipBackwards
+0392+  9C8F~            #DEFINE use_util.subHLbyDE
+0393+  9C8F~            #DEFINE use_file.rom.decpointer
+0394+  9C8F~            file.skipBackwards
+0395+  9C8F~            ; input hl	number of bytes to skip
+0396+  9C8F~            ; output	none
+0397+  9C8F~             push hl
+0398+  9C8F~             ex de,hl
+0399+  9C8F~             ld hl,(file.relative_adress)
+0400+  9C8F~             call util.SubHLbyDE
+0401+  9C8F~             jr c,file.skipback.BOF
+0402+  9C8F~             ld (file.relative_adress),hl
+0403+  9C8F~             ex de,hl
+0404+  9C8F~             pop hl
+0405+  9C8F~            #IFDEF TI83P
+0406+  9C8F~             ld a,(file.current_page)
+0407+  9C8F~             and a
+0408+  9C8F~             jr z,file.skipback.ram
+0409+  9C8F~            
+0410+  9C8F~            file.skipback.rom:
+0411+  9C8F~             ld b,a
+0412+  9C8F~             ex de,hl
+0413+  9C8F~             ld hl,(file.current_adress)
+0414+  9C8F~             push hl
+0415+  9C8F~            file.skipback.rom_loop:
+0416+  9C8F~             pop hl
+0417+  9C8F~             call file.rom.decpointer
+0418+  9C8F~             push hl
+0419+  9C8F~             dec de
+0420+  9C8F~             ld hl,0
+0421+  9C8F~             bcall(_cphlde)
+0422+  9C8F~             jr nz,file.skipback.rom_loop
+0423+  9C8F~             pop hl
+0424+  9C8F~             ld (file.current_adress),hl
+0425+  9C8F~             ret
+0426+  9C8F~            #ENDIF
+0427+  9C8F~            
+0428+  9C8F~            file.skipback.ram:
+0429+  9C8F~             ld hl,(file.current_adress)
+0430+  9C8F~             call util.SubHLbyDE
+0431+  9C8F~             ld (file.current_adress),hl
+0432+  9C8F~             ret
+0433+  9C8F~            
+0434+  9C8F~            file.skipback.BOF:
+0435+  9C8F~             pop hl
+0436+  9C8F~             ret
+0437+  9C8F             #ENDIF
+0438+  9C8F             
+0439+  9C8F             file.symtableptr
+0440+  9C8F 00 00        .db 0,0
+0441+  9C91             file.start_adress:
+0442+  9C91 00 00        .db 0,0
+0443+  9C93             file.current_adress:
+0444+  9C93 00 00        .db 0,0
+0445+  9C95             file.relative_adress:
+0446+  9C95 00 00        .db 0,0
+0447+  9C97             file.length:
+0448+  9C97 00 00        .db 0,0
+0449+  9C99             
+0450+  9C99~            #IFDEF TI83P
+0451+  9C99~            file.start_page:
+0452+  9C99~             .db 0
+0453+  9C99~            file.current_page:
+0454+  9C99~             .db 0
+0455+  9C99             #ENDIF
+0456+  9C99             
+0457+  9C99             .end
+0458+  9C99             END
+1095   9C99             
+1096   9C99             
+1097   9C99             
+1098   9C99             
+1099   9C99             ;;
+1100   9C99             ;;	; Data
+1101   9C99             ;;
+1102   9C99             
+1103   9C99             
+1104   9C99             #IFDEF LAN_EN
+1105   9C99             #include "beta3/en.asm"
+0001+  9C99             TEXT_TXT:
+0002+  9C99 546578747300 .db "Texts",0
+0003+  9C9F             CALC_TXT:
+0004+  9C9F 457865637574 .db "Executables",0
+0004+  9CA5 61626C657300
+0005+  9CAB             NONE_TXT:
+0006+  9CAB 286E6F6E6529 .db "(none)",0
+0006+  9CB1 00
+0007+  9CB2             AUTHOR_TXT:
+0008+  9CB2 417574686F72 .db "Author:",0
+0008+  9CB8 3A00
+0009+  9CBA             DESCRIPTION_TXT:
+0010+  9CBA 446573637269 .db "Description:",00010+  9CC0 7074696F6E3A00
+1106   9CC7             #ENDIF
+1107   9CC7~            #IFDEF LAN_NL
+1108   9CC7~            #include "beta3/nl.asm"
+1109   9CC7             #ENDIF
+1110   9CC7~            #IFDEF LAN_DE
+1111   9CC7~            #include "beta3/de.asm"
+1112   9CC7             #ENDIF
+1113   9CC7~            #IFDEF LAN_FR
+1114   9CC7~            #include "beta3/fr.asm"
+1115   9CC7             #ENDIF
+1116   9CC7~            #IFDEF LAN_ES
+1117   9CC7~            #include "beta3/es.asm"
+1118   9CC7             #ENDIF
+1119   9CC7~            #IFDEF LAN_IT
+1120   9CC7~            #include "beta3/it.asm"
+1121   9CC7             #ENDIF
+1122   9CC7~            #IFDEF LAN_LA
+1123   9CC7~            #include "beta3/la.asm"
+1124   9CC7             #ENDIF
+1125   9CC7             
+1126   9CC7             FlagsSave:
+1127   9CC7 FF           .db $FF
+1128   9CC8             
+1129   9CC8             
+1130   9CC8             
+1131   9CC8             
+1132   9CC8             
+1133   9CC8             
+1134   9CC8             
+1135   9CC8             ; Appendix A:
+1136   9CC8             ; Textplugin should look like this:
+1137   9CC8             ;
+1138   9CC8             ; .db $D9,$3F				; Stop\n
+1139   9CC8             ; .db %10000000				; Flags
+1140   9CC8             ; .db tag_title,"[title]",tag_title
+1141   9CC8             ; .db tag_author,"[author]",tag_author
+1142   9CC8             
+1143   9CC8             ; .db "Dit is regel 1",tag_return		; Text itself
+1144   9CC8             ; .db "Dit is r...
+1145   9CC8             
+1146   9CC8             
+1147   9CC8             
+1148   9CC8             
+1149   9CC8             ; Appendix B: Calcplugin should look like this:
+1150   9CC8             ;
+1151   9CC8             ; .db $3F			; \n
+1152   9CC8             ; .db $2A,$3F			; "\n
+1153   9CC8             ; .db $2A,"[title]",$3F		; "[title]\n
+1154   9CC8             ; .db $2A,"[author]",$3F	; "[author]\n
+1155   9CC8             ;				; Beginning of calc
+1156   9CC8             
+1157   9CC8             
+1158   9CC8             END_OF_BETA:
+1159   9CC8             .end
+1160   9CC8             ENDtasm: Number of errors = 0

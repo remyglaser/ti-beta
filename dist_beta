@@ -1,0 +1,81 @@
+#!/bin/bash
+cd `dirname "$0"`
+cd ..
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_EN beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-en.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_EN beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-en.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_NL beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-nl.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_NL beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-nl.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_DE beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-de.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_DE beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-de.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_FR beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-fr.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_FR beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-fr.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_ES beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-es.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_ES beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-es.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_IT beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-it.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_IT beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-it.83p ZBETA
+
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_LA beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/dist/beta-la.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_LA beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/dist/beta-la.83p ZBETA
+
+zip -r beta3/dist/beta-3.0-source.zip beta3/*.asm beta3/readme.txt include/TI83P/ti83plus.inc include/TI83/ti83asm.inc beta3/gpl-3.0.txt
+
+cd beta3/dist
+
+zip beta-3.0-ti83p-en.zip ABETA.8xp beta-en.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-en.zip BETA.83p ZASMLOAD.83p beta-en.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-nl.zip ABETA.8xp beta-nl.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-nl.zip BETA.83p ZASMLOAD.83p beta-nl.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-de.zip ABETA.8xp beta-de.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-de.zip BETA.83p ZASMLOAD.83p beta-de.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-fr.zip ABETA.8xp beta-fr.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-fr.zip BETA.83p ZASMLOAD.83p beta-fr.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-es.zip ABETA.8xp beta-es.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-es.zip BETA.83p ZASMLOAD.83p beta-es.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-it.zip ABETA.8xp beta-it.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-it.zip BETA.83p ZASMLOAD.83p beta-it.83p ../gpl-3.0.txt
+
+zip beta-3.0-ti83p-la.zip ABETA.8xp beta-la.8xp ../gpl-3.0.txt
+zip beta-3.0-ti83-la.zip BETA.83p ZASMLOAD.83p beta-la.83p ../gpl-3.0.txt
+
+cp *.zip /media/storage/Beta/
+cp *.zip /media/storage/Webserver/beta/
+
+exit

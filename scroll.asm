@@ -338,7 +338,7 @@ END_TAB:
  jp OUTPUT_PAGE_LOOP
 
 INCCURSOR:
- call INCCURSOR_SYS
+ call file.readByte
  jp c,RETTO__SCROLL_KEY
  ret
 

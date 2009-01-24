@@ -1,0 +1,11 @@
+#!/bin/bash
+cd `dirname "$0"`
+cd ..
+
+wine TASM32.EXE -t80 -b -i -dTI83P -dLAN_EN beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83p -o beta3/beta.bin beta3/beta-en.8xp ZBETA
+
+wine TASM32.EXE -t80 -b -i -dTI83 -dLAN_EN beta3/beta.asm beta3/beta.bin
+/media/windows/Programming/Java/Binary\ Linker/execute -c 83 -o beta3/beta.bin beta3/beta-en.83p ZBETA
+
+exit

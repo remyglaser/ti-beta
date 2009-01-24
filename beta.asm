@@ -17,13 +17,15 @@
 #define end .end
 #define END .end
 
-PLUSCODE	equ	1	; 0 means Ti-83, 1 means Ti-83+
-
-#IF PLUSCODE == 1
-#include "ti83plus.inc"
+#IFDEF TI83P
+#include "include/TI83P/ti83plus.inc"
 #ELSE
-#include "ti83asm.inc"
+#include "include/TI83/ti83asm.inc"
 #ENDIF
+
+#DEFINE use_file.open
+#DEFINE use_file.skip
+#DEFINE use_file.readByte
 
 #define Square(aa,bb,cc,dd)	ld bc,aa*256+bb	\ ld de,cc*256+dd	\ call SQUARE
 
@@ -188,36 +190,6 @@ Description	EQU	String_Temp
 
 .LIST
 .org progstart
-BEGINNING_OF_BETA:
-
-; TODO: Check why this code is left out
-;; check if beta is executed on the right calc
-; ld hl,progstart
-; ld de,BEGINNING_OF_BETA	; compare system progstart with actual progstart
-; ld a,h				; no _cphlde because it would cause a crash if incorrect calc
-; cp d
-; ret nz				; Exit immediately if incorrect calc
-; ld a,l
-; cp e
-; ret nz				; Exit immediately if incorrect calc
-;;
-;;; increase speed to maximum
-;; bcall(_GetBaseVer)		; OS version in A, B
-;; cp 2				; check major version
-;; jr nc,Above112			; if 2.x, then > 1.12
-;; cp 1				; if 0.x, then < 1.12
-;; jr nz,Below112			; major version = 1
-;; ld a,b
-;; cp 13				; check minor version
-;; jr c,Below112			; C if minor version < 13
-;;Above112:
-;; ld a,$FF			; set fastest speed possible
-;; bcall(_SetExSpeed)
-;; jr Done
-;;Below112:			; earlier than 1.12
-;;Done:
-
-
 
 ; Save Beta's program name
  ld hl,Op1
@@ -229,13 +201,12 @@ BEGINNING_OF_BETA:
  bcall(_clrLCDFull)
 
 ; (re)set flags
- res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
-#IF PLUSCODE == 1
+#IFDEF TI83P
  res 2,(iy+50)			; No large font on graph screen
  set bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
-#ELSE
- res plotLoc,(iy+plotflags)
 #ENDIF
+ res statsvalid,(IY+statflags)	; Make sure Statvars RAM area isn't used
+ res plotLoc,(iy+plotflags)
  set textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
 
 ; Save SP register
@@ -254,316 +225,8 @@ BEGINNING_OF_BETA:
 ; Start Beta
 BETASHELL:
 
- set LftMenu,(iy+BetaFlags)
- set MenuInDisplay,(iy+BetaFlags)
 
-
-
-
-
-
-
-
-
-
-
- call DRAWMENU
-
- ld a,1
- ld (RgtMenuCur),a
-
-
-
-
-UPDATE_MENU:
- call DELETE_LEFT
-
- ld a,1
- ld (LftMenuCur),a
-
- vLocate(44,6)
- ld a,$D0
- bit XText,(iy+SelectFlags)
- call z,LOAD_EMPTY
- bcall(_vputmap)
-
- vLocate(44,12)
- ld a,$D0
- bit XCalc,(iy+SelectFlags)
- call z,LOAD_EMPTY
- bcall(_vputmap)
-
-;| vLocate(44,18)	; These are two extra menu items after the existing two. Now obsolete.
-;| ld a,$D0
-;| bit XScheikunde,(iy+SelectFlags)
-;| call z,LOAD_EMPTY
-;| bcall(_vputmap)
-
-;| vLocate(44,24)
-;| ld a,$D0
-;| bit XNoSubject,(iy+SelectFlags)
-;| call z,LOAD_EMPTY
-;| bcall(_vputmap)
-
- bcall(_zeroop1)
- ld a,progobj
- ld (op1),a
- call _FindBetaUp
- jp c,NONE_FOUND
-
- call OUTPUT_PROGRAM_LIST_UP
-
- bit LftMenu,(iy+BetaFlags)
- call nz,PLACE_LEFT
-
-LMENU_LOOP:
-
- call _chkfindplugin
- call CLEAR_PROGRAM_INFO
- vLocate(40,40)
- ld hl,(Author)
- bcall(_vPuts)
-
- vLocate(2,56)
- ld hl,Description
- bcall(_vPuts)
-
-
- bit LftMenu,(iy+BetaFlags)
- jp z,RMENU_LOOP
-
- bcall(_grbufcpy)
-LMENU_KEYLOOP:
- call BETAKEY
- cp key_up
- jr z,LEFT_UP
- cp key_down
- jr z,LEFT_DOWN
- cp key_right
- jr z,RIGHT_MENU
- cp key_enter
- jr z,LEFT_ENTER
- jr LMENU_KEYLOOP
-
-LEFT_UP:
- ld a,(LftMenuCur)
- cp 1
- jr z,PLUG_UP
- dec a
- ld (x),a
- call _FindBetaDown		; update op1
-; jr c,LMENU_KEYLOOP		; should not be possible
- jp c,_errTolTooSmall
- call DELETE_LEFT
- ld a,(x)
- ld (LftMenuCur),a
- call PLACE_LEFT
- jr LMENU_LOOP
-
-PLUG_UP:		; scroll list up
- call _FindBetaDown
- jr c,LMENU_KEYLOOP
- call OUTPUT_PROGRAM_LIST_UP
- jr LMENU_LOOP
-
-LEFT_DOWN:
- ld a,(LftMenuCur)
- cp 9
- jr z,PLUG_DOWN
- inc a
- ld (x),a
- call _FindBetaUp
- jr c,LMENU_KEYLOOP
- call DELETE_LEFT
- ld a,(x)
- ld (LftMenuCur),a
- call PLACE_LEFT
- jp LMENU_LOOP
-
-PLUG_DOWN:
- call _FindBetaUp
- jr c,LMENU_KEYLOOP
- call OUTPUT_PROGRAM_LIST_DOWN
- jp LMENU_LOOP
-
-LEFT_ENTER:
- res MenuInDisplay,(iy+BetaFlags)
- bit xCalc,(iy+properties)
- jp nz,CALC_PLUG
- jp z,SIMPLE_SCROLL
-
-LOAD_EMPTY:
- ld a,$06
- ret
-
-RIGHT_MENU:
- res LftMenu,(iy+BetaFlags)
- call DELETE_LEFT
- call PLACE_RIGHT
-
-RMENU_LOOP:
- bcall(_grbufcpy)
-
-RMENU_KEYLOOP:
- call BETAKEY
- cp key_up
- jr z,RIGHT_UP
- cp key_down
- jr z,RIGHT_DOWN
- cp key_left
- jr z,LEFT_MENU
- cp key_enter
- jr z,RIGHT_ENTER
- jr RMENU_KEYLOOP
-
-RIGHT_UP:
- ld a,(RightMenuCur)
- cp 1
- jr z,RMENU_KEYLOOP
- dec a
- push af
- call DELETE_RIGHT
- pop af
- ld (RightMenuCur),a
- call PLACE_RIGHT
- jr RMENU_LOOP
-
-RIGHT_DOWN:
- ld a,(RightMenuCur)
- cp 2
- jr z,RMENU_KEYLOOP
- inc a
- push af
- call DELETE_RIGHT
- pop af
- ld (RightMenuCur),a
- call PLACE_RIGHT
- jr RMENU_LOOP
-
-LEFT_MENU:
- ld a,(LeftMenuCur)
- and a
- jr z,RMENU_KEYLOOP
- 
- set LftMenu,(iy+BetaFlags)
- call DELETE_RIGHT
- call PLACE_LEFT
- jp LMENU_LOOP
-
-RIGHT_ENTER:
- ld a,(RightMenuCur)
-
-;| ld b,%10000000		; Wiskunde
-;| cp 1
-;| jr z,XOR_IT
-
-;| ld b,%01000000		; Natuurkunde
-;| cp 2
-;| jr z,XOR_IT
-
-;| ld b,%00100000		; Scheikunde
-;| cp 3
-;| jr z,XOR_IT
-
-;| ld b,%00010000		; Overigen
-
- ld b,%00000100			; Text
- cp 1
- jr z,XOR_IT
-
- ld b,%00001000			; Calc
-XOR_IT:
- ld a,b
- xor (iy+SelectFlags)
- ld (iy+SelectFlags),a
- jp UPDATE_MENU
-
-NONE_FOUND:
- ld a,(LftMenuCur)
- and a
- jr z,RMENU_KEYLOOP
- call CLEAR_PROGRAM_LIST
- call CLEAR_PROGRAM_INFO
- Text(6,1,NONE_TXT)
- 
- res LftMenu,(iy+BetaFlags)
- call DELETE_LEFT
- call PLACE_RIGHT
- xor a
- ld (LeftMenuCur),a
- jp RMENU_LOOP
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-DELETE_LEFT:
- call CALCULATE_LEFT
- ld a,$06
- bcall(_vputmap)
- ret
-
-PLACE_LEFT:
- call CALCULATE_LEFT
- ld a,$05
- bcall(_vputmap)
-
-CALCULATE_LEFT:
- ld a,(LeftMenuCur)
- and a
- jr z,CALCULATE_INVALID
- ld l,a
- ld h,6
- bcall(_htimesl)
- ld a,l
- sub 5
- ld h,a
- ld l,2
- ld (pencol),hl
- ret
-
-CALCULATE_INVALID:
- pop hl
- ret
-
-DELETE_RIGHT:
- call CALCULATE_RIGHT
- ld a,$06
- bcall(_vputmap)
- ret
-
-PLACE_RIGHT:
- call CALCULATE_RIGHT
- ld a,$05
- bcall(_vputmap)
-
-CALCULATE_RIGHT:
- ld a,(RightMenuCur)
- ld l,a
- ld h,6
- bcall(_htimesl)
- ld h,l
- ld l,40
- ld (pencol),hl
- ret
-
-
-
+#include "beta3/menu.asm"
 
 
 
@@ -579,28 +242,12 @@ _ChkFindPlug:
 ; carry flag reset if valid plugin
 ; (iy+Properties)=Plugin flags
 
- bcall(_chkfindsym)
+ call file.open
  jp c,CS_INVALID
  xor a
  ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
 
-#IF PLUSCODE == 1
- ld a,b
- and a
- jr nz,CS_INVALID
-#ENDIF
-
- ex de,hl
- ld e,(hl)		; length low byte
- inc hl
- ld d,(hl)		; length high byte
- inc hl
- ld (cursor_adress),hl
- add hl,de		; beginning+length=end
- ld (max_adress),hl
-
- ld hl,(cursor_adress)
- ld a,(hl)
+ call CHK_INCCURSOR
  cp $D9			; STOP
  jr z,CS_TEXTPLUGIN
  cp $3F			; \n
@@ -625,18 +272,19 @@ CS_CALCPLUGIN:
  jp nz,INVALID2
 
  call CHK_INCCURSOR
+ ld hl,1
  cp $29				; space
  jr z,CS_SKIP_ONE
  cp $3F
  jr z,CS_SKIP_NONE
 CS_SKIP_TWO:
- call CHK_INCCURSOR
+ inc hl
 CS_SKIP_ONE:
- call CHK_INCCURSOR
-CS_SKIP_NONE:
+ call file.skip
+ call file.readByte
  cp $3F
  jp nz,INVALID2
-
+CS_SKIP_NONE:
  set xCalc,(iy+Properties)	; Make sure calc flag is set
 
  rcf
@@ -704,29 +352,12 @@ _ChkFindPlugin:
 ; Description=Program Description
 ; (Author)=Author
 
-
- bcall(_chkfindsym)
+ call file.open
  jp c,INVALID2
  xor a
  ld (op1+9),a		; Sometimes, _chkfindsym loads 5 or 6 into op1+9
 
-#IF PLUSCODE == 1
- ld a,b
- and a
- jp nz,INVALID
-#ENDIF
-
- ex de,hl
- ld e,(hl)		; length low byte
- inc hl
- ld d,(hl)		; length high byte
- inc hl
- ld (cursor_adress),hl
- add hl,de		; beginning+length=end
- ld (max_adress),hl
-
- ld hl,(cursor_adress)
- ld a,(hl)
+ call CHK_INCCURSOR
  cp $D9			; Stop
  jr z,TEXTPLUGIN
  cp $3F			; \n
@@ -749,13 +380,13 @@ TEXTPLUGIN:
  ld hl,String_temp
  ld (String_adress),hl
 
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_TITLE_LOOP_END
  cp tag_title
  jr nz,TXT_TITLE_LOOP_END
 
 TXT_TITLE_LOOP:
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_TITLE_LOOP_END
  cp tag_title
  jr z,TXT_TITLE_LOOP_END
@@ -783,7 +414,7 @@ TXT_TITLE_LOOP:
 TXT_TITLE_TOO_LONG:
  pop af			; cleans the stack a is not used here (we already known the length is too long)
 TXT_TITLE_TOO_LONG_LOOP:
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_TITLE_LOOP_END	; EOF
  cp tag_title
  jr nz,TXT_TITLE_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
@@ -802,13 +433,13 @@ TXT_AUTHOR:
 
  xor a
  ld (String_length),a
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_AUTHOR_LOOP_END
  cp tag_author
  jr nz,TXT_AUTHOR_LOOP_END
 
 TXT_AUTHOR_LOOP:
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_AUTHOR_LOOP_END
  cp tag_author
  jr z,TXT_AUTHOR_LOOP_END
@@ -836,7 +467,7 @@ TXT_AUTHOR_LOOP:
 TXT_AUTHOR_TOO_LONG:
  pop af			; cleans the stack a is not used here (we already known the length is too long)
 TXT_AUTHOR_TOO_LONG_LOOP:
- call TXT_INCCURSOR
+ call file.readByte
  jr c,TXT_AUTHOR_LOOP_END	; EOF
  cp tag_author
  jr nz,TXT_AUTHOR_TOO_LONG_LOOP	; loop until the tag end is found (or an EOF encountered). The last part of the description is ignored.
@@ -845,7 +476,6 @@ TXT_AUTHOR_LOOP_END:
  ld hl,(String_adress)
  ld (hl),0		; it's now a zero-terminated string
 
- call TXT_INCCURSOR
  rcf
  ret
 
@@ -920,13 +550,13 @@ SKIP_NONE:
  ld hl,String_temp
  ld (String_adress),hl
 
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_TITLE_LOOP_END
  cp $2A
  jr nz,CLC_TITLE_LOOP_END
 
 CLC_TITLE_LOOP:
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_TITLE_LOOP_END
  cp $3F
  jr z,CLC_TITLE_LOOP_END
@@ -954,7 +584,7 @@ CLC_TITLE_LOOP:
  jr CLC_TITLE_LOOP
 
 CLC_TITLE_TOO_LONG:
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_TITLE_LOOP_END
  cp $3F
  jr z,CLC_TITLE_LOOP_END
@@ -983,13 +613,13 @@ CLC_AUTHOR:
 
  xor a
  ld (String_length),a
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_AUTHOR_LOOP_END
  cp $2A
  jr nz,CLC_AUTHOR_LOOP_END
 
 CLC_AUTHOR_LOOP:
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_AUTHOR_LOOP_END
  cp $3F
  jr z,CLC_AUTHOR_LOOP_END
@@ -1015,7 +645,7 @@ CLC_AUTHOR_LOOP:
  jr CLC_AUTHOR_LOOP
 
 CLC_AUTHOR_TOO_LONG:
- call CLC_INCCURSOR
+ call file.readByte
  jr c,CLC_AUTHOR_LOOP_END
  cp $3F
  jr z,CLC_AUTHOR_LOOP_END
@@ -1038,25 +668,12 @@ INVALID2:
  xor a
  ld (iy+Properties),a
  scf		; set carry flag
+ pop hl
  ret
 
 CHK_INCCURSOR:
- call INCCURSOR_SYS
+ call file.readByte
  jr c,INVALID2
- ret
-
-TXT_INCCURSOR:
-CLC_INCCURSOR:
-INCCURSOR_SYS:
- ld hl,(max_adress)
- ex de,hl
- ld hl,(cursor_adress)
- inc hl
- bcall(_cphlde)
- jp z,SCF
- ld (cursor_adress),hl
- ld a,(hl)
- rcf
  ret
 
 
@@ -1156,105 +773,23 @@ INVALID:
 
 
 
-DRAWMENU:
- bcall(_GrBufClr)
-
- LineChange
-
- Square(0,0,38,0)
- Square(38,5,94,5)
- Square(38,31,94,31)
- Square(38,39,94,39)
- Square(38,47,94,47)
- Square(0,55,94,55)
-
- Square(0,0,0,63)
- Square(38,0,38,55)
- Square(94,5,94,63)
- Square(0,63,94,63)
-
-;| Text(48,6,WI_TXT)
- Text(48,6,TEXT_TXT)
-;| Text(48,12,NA_TXT)
- Text(48,12,CALC_TXT)
-;| Text(48,18,SK_TXT)
-;| Text(48,24,OV_TXT)
- Text(40,32,AUTHOR_TXT)
- Text(40,48,DESCRIPTION_TXT)
-
- ret
-
-
-OUTPUT_PROGRAM_LIST_UP:
- call CLEAR_PROGRAM_LIST
-
-
- bcall(_op1toop4)
- ld b,9		; there are 9 slots in the menu
-UP_PROGRAM_LIST_LOOP:
- push bc
- ld h,b			; 55-(b*6)->penrow
- ld l,6
- bcall(_htimesl)
- ld a,55
- sub l
- ld h,a
- ld l,6
- ld (pencol),hl
-
- ld hl,op1+1
- bcall(_vputs)		; outputs plugin name
- call _FindBetaUp	; find next Plugin
- jr c,UP_PROGRAM_LIST_LOOP_END
- pop bc
- djnz UP_PROGRAM_LIST_LOOP
- push bc
-UP_PROGRAM_LIST_LOOP_END:
- pop bc
- bcall(_op4toop1)
- ret
 
 
 
 
-OUTPUT_PROGRAM_LIST_DOWN:
- call CLEAR_PROGRAM_LIST
 
- bcall(_op1toop4)
- ld b,9		; there are 9 slots in the menu
-DN_PROGRAM_LIST_LOOP:
- push bc
- ld h,b			; (b*6)-5->penrow
- ld l,6
- bcall(_htimesl)
- ld a,l
- sub 5
- ld h,a
- ld l,6
- ld (pencol),hl
 
- ld hl,op1+1
- bcall(_vputs)		; outputs plugin name
- call _FindBetaDown	; Find next Plugin
- jr c,DN_PROGRAM_LIST_LOOP_END
- pop bc
- djnz DN_PROGRAM_LIST_LOOP
- push bc
-DN_PROGRAM_LIST_LOOP_END:
- pop bc
- bcall(_op4toop1)
- ret
 
-CLEAR_PROGRAM_LIST:
- LineOff
- Square(6,1,37,54)	; clear program list
- ret
 
-CLEAR_PROGRAM_INFO:
- LineOff
- Square(2,56,93,61)	; clear author
- Square(40,40,93,45)	; clear description
- ret
+
+
+
+
+
+
+
+
+
 
 OPEN_PLUGIN:
  bcall(_op5toop1)		; op5= first plugin in the list
@@ -1283,7 +818,7 @@ CALC_PLUG:
  bcall(_op2toop1)
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
-#IF PLUSCODE == 1
+#IFDEF TI83P
  res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
 #ENDIF
 
@@ -1306,7 +841,7 @@ CALC_PLUG:
 
 
 
-#include "scroll.asm"
+#include "beta3/scroll.asm"
 
 
 
@@ -1318,11 +853,11 @@ CALC_PLUG:
 
 ;BETAKEY:
 ; bcall(_runindicoff)
-;#IF PLUSCODE == 1
+;#IFDEF TI83P
 ; bcall(_op1toop3)		; prevents MirageOS bug
 ;#ENDIF
 ; bcall(_getkey)
-;#IF PLUSCODE == 1
+;#IFDEF TI83P
 ; bcall(_op3toop1)		; prevents MirageOS bug
 ;#ENDIF
 ;
@@ -1372,29 +907,29 @@ GETKEY_LOOP:
  jp z,EXIT
  cp key_quit
  jp z,EXIT
- ld b,%10001100		; Wiskunde
- cp key_Y
- jr z,SHORTCUT
- ld b,%01001100		; Natuurkunde
- cp Key_window
- jr z,SHORTCUT
- ld b,%00101100		; Scheikunde
- cp Key_zoom
- jr z,SHORTCUT
- ld b,%00011100		; Overigen
- cp Key_Trace
- jr z,SHORTCUT
- ld b,%11111100		; Alles
- cp Key_graph
- jr z,SHORTCUT
+; ld b,%10001100		; Wiskunde
+; cp key_Y
+; jr z,SHORTCUT
+; ld b,%01001100		; Natuurkunde
+; cp Key_window
+; jr z,SHORTCUT
+; ld b,%00101100		; Scheikunde
+; cp Key_zoom
+; jr z,SHORTCUT
+; ld b,%00011100		; Overigen
+; cp Key_Trace
+; jr z,SHORTCUT
+; ld b,%11111100		; Alles
+; cp Key_graph
+; jr z,SHORTCUT
  ret
 
-SHORTCUT:
- ld a,b
- ld (iy+SelectFlags),a
- bit MenuInDisplay,(iy+BetaFlags)
- jp z,BETASHELL
- jp UPDATE_MENU
+;SHORTCUT:
+; ld a,b
+; ld (iy+SelectFlags),a
+; bit MenuInDisplay,(iy+BetaFlags)
+; jp z,BETASHELL
+; jp UPDATE_MENU
 
 
 CPOP1OP2:
@@ -1421,6 +956,10 @@ CPOP1OP2_LOOP:
  ret
 
 
+
+
+
+
 SQUARE:
 ; Puts a rectangle in the graph backup buffer or a straight line
 ; Input:
@@ -1429,196 +968,73 @@ SQUARE:
 ; d: x coordinate of lower right corner
 ; e: y coordinate of lower right corner
 ; h: 0 - pixel off operation
-;    0 - pixel on operation
-;    0 - pixel change operation (xor)
+;    1 - pixel on operation
+;    2+ - pixel change operation (xor)
 ; @require b<96 && c<64 && d<96 && e<64 && b<=d && c<=e
 ; to draw a line, make sure b=d or c=e
 ; to draw a point, make sure b=d and c=e
 
  ld a,h
- ld (operation),a
- push bc
- ld a,e
- sub c
- inc a
- ld (sq_height),a
+ cp 2
+ jr nz,SQUARE_PIXELCHANGE1
 
- ld h,0
- ld l,b
- ld a,8
- bcall(_divhlbya)
- ld b,l
- push bc
-
- ld l,d
- ld a,8
- bcall(_divhlbya)
- pop bc
- ld a,l
- sub b
- dec a
- ld (sq_length),a
-
- pop bc
+ LineOn
+SQUARE_PIXELCHANGE1:
+; b=b
+; c=c
+; d=d
+; e=c
  push de
- ld l,b
- ld h,0
- ld a,8
- bcall(_divhlbya)
- ld b,a
- ld a,7
- sub b
-
-		
- ld b,a			; 0	; %00000001
- inc b			; 1	; %00000011
- xor a			; 2	; %00000111
-SQ_UNTIL_LOOP:		; 3	; %00001111
- scf			; 4	; %00011111
- rla			; 5	; %00111111
- djnz SQ_UNTIL_LOOP	; 6	; %01111111
-			; 7	; %11111111
-
- ld (point1bit),a
- ld a,l
- ld l,c
- ld h,12
- bcall(_htimesl)
- add a,l
- ld l,a
- jr nc,$+3
- inc h
- ld de,plotsscreen
- add hl,de
- ld (point1),hl
-
+ ld e,c
+ bcall(_iline)
  pop de
- ld l,d
- ld h,0
- ld a,8
- bcall(_divhlbya)
- ld b,a
- ld a,7
- sub b
 
-
- ld b,a			; 0	; %11111111
- ld a,7			; 1	; %11111110
- sub b			; 2	; %11111100
- ld b,a			; 3	; %11111000
- inc b			; 4	; %11110000
- xor a			; 5	; %11100000
-SQ_FROM_LOOP:		; 6	; %11000000
- scf			; 7	; %10000000
- rra
- djnz SQ_FROM_LOOP
-
-
-
- ld (point2bit),a
- ld a,l
- ld l,e
- ld h,12
- bcall(_htimesl)
- add a,l
- ld l,a
- jr nc,$+3
- inc h
- ld de,plotsscreen
- add hl,de
- ld (point2),hl
-
-
-
- ld hl,(point1)
- ld a,(sq_height)
- ld b,a
-
- ld a,(sq_length)
- cp $FF
- jr z,SMALL_SQUARE
-
-SQUARE_LOOP:
+; b=b
+; c=e
+; d=d
+; e=e
  push bc
- ld a,(point1bit)
- call PERFORM_OPERATION
- inc hl
+ ld c,e
+ bcall(_iline)
+ pop bc
 
- ld a,(sq_length)
- and a
- jr z,NO_LOOP
- ld b,a
-SQUARE_FILL_LOOP:
+ ld a,h
+ cp 2
+ jr nz,SQUARE_PIXELCHANGE2
+ LineChange
+SQUARE_PIXELCHANGE2:
+; b=b
+; c=c
+; d=b
+; e=e
+ push de
+ ld d,b
+ bcall(_iline)
+ pop de
+
+; b=d
+; c=c
+; d=d
+; e=e
  push bc
- ld a,$FF
- call PERFORM_OPERATION
+ ld b,d
+ bcall(_iline)
  pop bc
- inc hl
- djnz SQUARE_FILL_LOOP
-
-NO_LOOP:
-
- ld a,(point2bit)
- call PERFORM_OPERATION
-
- ld a,(sq_length)
- ld b,a
- ld a,11
- sub b
- ld b,a
-SQ_SKIP_LOOP:
- inc hl
- djnz SQ_SKIP_LOOP
- pop bc
- djnz SQUARE_LOOP
-
- ld a,(operation)
- ld h,a
  ret
 
-SMALL_SQUARE:
- push bc
- ld a,(point1bit)
- ld b,a
- ld a,(point2bit)
- and b
- call PERFORM_OPERATION
- 
- ld de,12
- add hl,de
- pop bc
- djnz SMALL_SQUARE
 
- ld a,(operation)
- ld h,a
- ret
 
-PERFORM_OPERATION:
- ld b,a
- ld a,(operation)
- and a
- jr z,PXL_OFF
- cp 1
- jr z,PXL_ON
 
-PXL_CHANGE:
- ld a,b
- xor (hl)
- ld (hl),a
- ret
 
-PXL_OFF:
- ld a,255
- xor b
- and (hl)
- ld (hl),a
- ret
 
-PXL_ON:
- ld a,b
- or (hl)
- ld (hl),a
- ret
+
+
+
+
+
+
+
+
 
 
 SAVE_SELECT_FLAGS:
@@ -1633,7 +1049,7 @@ SAVE_SELECT_FLAGS:
  inc hl
  ld d,(hl)
  push hl		; hl=program adress
-#IF PLUSCODE == 1
+#IFDEF TI83P
  ld hl,END_OF_BETA-progstart+2	; length squished+length bytes
 #ELSE
  ld hl,END_OF_BETA-progstart	; length squished
@@ -1651,7 +1067,7 @@ EXIT:
  call SAVE_SELECT_FLAGS
 
  res textwrite,(iy+sgrflags)	; Write text only in graph backup buffer
-#IF PLUSCODE == 1
+#IFDEF TI83P
  res bufferonly,(iy+plotflag3)	; Draw to graph backup buffer only
 #ENDIF
 
@@ -1675,6 +1091,8 @@ EXIT:
 
 
 
+#include "include/file.inc"
+
 
 
 
@@ -1683,9 +1101,27 @@ EXIT:
 ;;
 
 
-
-#include "language.asm"
-
+#IFDEF LAN_EN
+#include "beta3/en.asm"
+#ENDIF
+#IFDEF LAN_NL
+#include "beta3/nl.asm"
+#ENDIF
+#IFDEF LAN_DE
+#include "beta3/de.asm"
+#ENDIF
+#IFDEF LAN_FR
+#include "beta3/fr.asm"
+#ENDIF
+#IFDEF LAN_ES
+#include "beta3/es.asm"
+#ENDIF
+#IFDEF LAN_IT
+#include "beta3/it.asm"
+#ENDIF
+#IFDEF LAN_LA
+#include "beta3/la.asm"
+#ENDIF
 
 FlagsSave:
  .db $FF
